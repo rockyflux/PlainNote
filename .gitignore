@@ -1,0 +1,19 @@
+node_modules/
+dist/
+
+# SQLite runtime files
+*.db
+*.db-journal
+*.db-wal
+*.db-shm
+*-wal
+*-shm
+
+# Accidental DB path = undefined (stringified missing path)
+/undefined
+
+.DS_Store
+Thumbs.db
+*.log
+.env
+.env.*
