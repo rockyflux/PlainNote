@@ -1,6 +1,7 @@
 import { api, ApiError, type NotePublic } from '../lib/api';
 import { renderMarkdown } from '../lib/markdown';
 import { copyText, toast, formatTime, downloadNote } from '../lib/dom';
+import { publicOrigin } from '../lib/origin';
 import { brandBarHtml } from '../components/BrandBar';
 import { footerHtml } from '../components/Footer';
 import { renderErrorView } from '../components/ErrorView';
@@ -82,7 +83,7 @@ function renderRead(root: HTMLElement, note: NotePublic): void {
     ${footerHtml()}
   `;
 
-  const noteUrl = window.location.origin + `/note/${note.id}`;
+  const noteUrl = `${publicOrigin()}/note/${note.id}`;
 
   bindLangSwitch(root, () => renderRead(root, note));
 

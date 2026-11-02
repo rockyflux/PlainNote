@@ -9,7 +9,7 @@ export function defaultSensitivePath(): string {
 }
 
 interface CompiledTerm {
-  /** 原始词条（仅内部诊断用，不对外返回） */
+  /** 原始词条 */
   word: string;
   /** 纯 ASCII：整词匹配；含中文等：子串匹配 */
   kind: 'ascii-word' | 'substring';
@@ -25,10 +25,7 @@ function isPureAscii(word: string): boolean {
   return /^[\x00-\x7F]+$/.test(word);
 }
 
-/**
- * 基于词库的内容过滤器。
- * 命中时不回传具体词条，避免被用来探测与绕过。
- */
+/** 基于词库的内容过滤器；命中时回传具体词条便于用户修改。 */
 export class SensitiveFilter {
   private readonly terms: readonly CompiledTerm[];
 
@@ -74,7 +71,7 @@ export class SensitiveFilter {
     return new SensitiveFilter(lines);
   }
 
-  /** 返回命中词（仅供内部/日志）；未命中返回 null。 */
+  /** 返回命中词；未命中返回 null。 */
   findMatch(text: string): string | null {
     if (!text || this.terms.length === 0) return null;
     const lower = text.toLowerCase();
@@ -90,7 +87,7 @@ export class SensitiveFilter {
     return null;
   }
 
-  /** 校验标题与正文；命中则抛 422。 */
+  /** 校验标题与正文；命中则抛 422，并标明具体敏感词。 */
   assertClean(title: string | null | undefined, content: string | undefined): void {
     const parts: string[] = [];
     if (title) parts.push(title);
@@ -100,9 +97,7 @@ export class SensitiveFilter {
     const hit = this.findMatch(parts.join('\n'));
     if (!hit) return;
 
-    throw validationFailed(
-      { content: '内容包含不允许发布的词汇，请修改后重试' },
-      '内容包含敏感词',
-    );
+    const detail = `内容包含敏感词：${hit}`;
+    throw validationFailed({ content: detail }, detail);
   }
 }

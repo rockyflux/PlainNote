@@ -33,7 +33,7 @@ npm run build
 npm start
 ```
 
-默认监听 <http://127.0.0.1:3123>（数据库 `./plainnote.db`）。
+默认监听 <http://127.0.0.1:3123>（数据库 `~/.plainnote/plainnote.db`）。
 
 ### 开发模式（热更新）
 
@@ -64,7 +64,7 @@ npm start -- [选项]
 |---|---|---|---|---|
 | `--port <n>` | `-p` | `3123` | `PORT` | 监听端口（1–65535） |
 | `--host <addr>` | `-H` | `127.0.0.1` | `HOST` | 监听地址；传 `0.0.0.0` 才对外并打印警告 |
-| `--db <path>` | `-d` | `./plainnote.db` | `DB_PATH` | SQLite 文件路径，目录不存在时自动创建 |
+| `--db <path>` | `-d` | `~/.plainnote/plainnote.db` | `DB_PATH` | SQLite 文件路径，目录不存在时自动创建 |
 | `--sensitive <path>` | — | 包内词库 | `SENSITIVE_PATH` | 敏感词库（一行一词）；创建/更新标题与正文时拦截 |
 | `--help` | `-h` | — | — | 打印帮助并退出 |
 | `--version` | `-V` | — | — | 打印版本号并退出 |
@@ -113,11 +113,36 @@ plainnote/
 └── vite.config.ts
 ```
 
+## 部署
+
+本机构建并打包：
+
+```bash
+npm ci
+npm run build
+npm pack
+```
+
+把生成的 `.tgz` 上传到服务器并解压到目标目录，然后安装依赖：
+
+```bash
+npm install --omit=dev
+```
+
+**宝塔：** 网站 → 添加 Node 项目 → 项目目录选解压目录 → 启动选项选 `start`（即 `node dist/cli.js`）→ 端口 `3123`。再给域名做反向代理到 `http://127.0.0.1:3123`。
+
+无面板时直接：`npm start`（或 `node dist/cli.js`），默认监听 `127.0.0.1:3123`。
+
 ## 发布说明
 
-`package.json` 已配置 CLI bin（`plainnote` → `dist/cli.js`），且 `files` 只打包 `dist`。发布前请执行 `npm run build`，确保 `dist/`（含 `dist/static`）完整。
+npm 包名为 `plainshare`；CLI bin 为 `plainnote` → `dist/cli.js`。发布前请执行 `npm run build`。
 
-公开 npm 名 `plainnote` **已被其他包占用**，不要假设 `npx plainnote` 会安装本项目。若要发布，请换可用包名或使用 scoped 包名。
+```bash
+npm i -g plainshare
+plainnote
+# 或
+npx plainshare
+```
 
 ## 许可证
 

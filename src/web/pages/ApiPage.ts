@@ -1,6 +1,7 @@
 import { brandBarHtml } from '../components/BrandBar';
 import { footerHtml } from '../components/Footer';
 import { copyText, toast } from '../lib/dom';
+import { publicOrigin } from '../lib/origin';
 import { bindLangSwitch, docsPath, getLang, setLang, t, type Lang } from '../lib/i18n';
 
 function escapeHtml(text: string): string {
@@ -49,7 +50,7 @@ export function mountApi(root: HTMLElement, langHint?: Lang): void {
   ensureDocsPath(getLang());
 
   const m = t();
-  const origin = window.location.origin;
+  const origin = publicOrigin();
   const createCurl = `curl -X POST ${origin}/api/notes \\
   -H "Content-Type: application/json" \\
   -d '${m.apiCreateCurlBody}'`;

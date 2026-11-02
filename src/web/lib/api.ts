@@ -1,3 +1,5 @@
+import { publicOrigin } from './origin';
+
 export type NoteFormat = 'text' | 'markdown';
 
 export interface NotePublic {
@@ -14,6 +16,19 @@ export interface NoteFull extends NotePublic {
   editUrl: string;
   noteUrl: string;
   rawUrl: string;
+}
+
+/**
+ * 用浏览器公开 origin 重写笔记链接（https、省略 :443/:80）。
+ */
+export function withBrowserOrigin(note: NoteFull): NoteFull {
+  const origin = publicOrigin();
+  return {
+    ...note,
+    editUrl: `${origin}/edit/${note.secret}`,
+    noteUrl: `${origin}/note/${note.id}`,
+    rawUrl: `${origin}/raw/${note.id}`,
+  };
 }
 
 export class ApiError extends Error {
@@ -74,26 +89,29 @@ export interface UpdateNotePayload {
 }
 
 export const api = {
-  create(body: CreateNotePayload): Promise<NoteFull> {
-    return request<NoteFull>('/api/notes', {
+  async create(body: CreateNotePayload): Promise<NoteFull> {
+    const note = await request<NoteFull>('/api/notes', {
       method: 'POST',
       body: JSON.stringify(body),
     });
+    return withBrowserOrigin(note);
   },
 
-  loadBySecret(secret: string): Promise<NoteFull> {
-    return request<NoteFull>(`/api/notes/by-secret/${encodeURIComponent(secret)}`);
+  async loadBySecret(secret: string): Promise<NoteFull> {
+    const note = await request<NoteFull>(`/api/notes/by-secret/${encodeURIComponent(secret)}`);
+    return withBrowserOrigin(note);
   },
 
   getPublic(id: string): Promise<NotePublic> {
     return request<NotePublic>(`/api/notes/${encodeURIComponent(id)}`);
   },
 
-  update(secret: string, body: UpdateNotePayload): Promise<NoteFull> {
-    return request<NoteFull>(`/api/notes/${encodeURIComponent(secret)}`, {
+  async update(secret: string, body: UpdateNotePayload): Promise<NoteFull> {
+    const note = await request<NoteFull>(`/api/notes/${encodeURIComponent(secret)}`, {
       method: 'PATCH',
       body: JSON.stringify(body),
     });
+    return withBrowserOrigin(note);
   },
 
   remove(secret: string): Promise<{ ok: boolean }> {

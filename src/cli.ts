@@ -1,12 +1,14 @@
 #!/usr/bin/env node
 import { Command } from 'commander';
-import { resolve } from 'node:path';
+import { existsSync } from 'node:fs';
+import { homedir } from 'node:os';
+import { join, resolve } from 'node:path';
 import { createServer } from './server/index.js';
 import { defaultStaticDir } from './server/routes/static.js';
 
 const DEFAULT_PORT = 3123;
 const DEFAULT_HOST = '127.0.0.1';
-const DEFAULT_DB = './plainnote.db';
+const DEFAULT_DB = join(homedir(), '.plainnote', 'plainnote.db');
 /** 空字符串表示使用包内默认词库路径。 */
 const DEFAULT_SENSITIVE = '';
 
@@ -35,7 +37,7 @@ async function main(): Promise<void> {
   program
     .name('plainnote')
     .description('Anonymous Markdown notes with a web view and a curl-friendly raw link.')
-    .version('0.1.0')
+    .version('0.1.1')
     .option('-p, --port <n>', `监听端口（默认 ${DEFAULT_PORT}）`, process.env.PORT ?? String(DEFAULT_PORT))
     .option('-H, --host <addr>', `监听地址（默认 ${DEFAULT_HOST}，仅本机）`, process.env.HOST ?? DEFAULT_HOST)
     .option('-d, --db <path>', `SQLite 数据库文件路径（默认 ${DEFAULT_DB}）`, process.env.DB_PATH ?? DEFAULT_DB)
@@ -52,6 +54,11 @@ async function main(): Promise<void> {
   const dbPath = resolve(options.db || DEFAULT_DB);
   const sensitivePath = options.sensitive?.trim() ? resolve(options.sensitive.trim()) : undefined;
   const staticDir = defaultStaticDir();
+  if (!existsSync(staticDir)) {
+    console.error(`启动失败：前端静态目录不存在：${staticDir}`);
+    console.error('请确认已执行 npm run build，或安装的 plainshare 包包含 dist/static。');
+    process.exit(1);
+  }
 
   const server = createServer({ dbPath, staticDir, sensitivePath });
 

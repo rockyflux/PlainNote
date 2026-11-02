@@ -33,7 +33,7 @@ npm run build
 npm start
 ```
 
-Opens on <http://127.0.0.1:3123> by default (DB `./plainnote.db`).
+Opens on <http://127.0.0.1:3123> by default (DB `~/.plainnote/plainnote.db`).
 
 ### Dev mode (hot reload)
 
@@ -64,7 +64,7 @@ npm start -- [options]
 |---|---|---|---|---|
 | `--port <n>` | `-p` | `3123` | `PORT` | Listen port (1–65535) |
 | `--host <addr>` | `-H` | `127.0.0.1` | `HOST` | Bind address; use `0.0.0.0` to expose (prints a warning) |
-| `--db <path>` | `-d` | `./plainnote.db` | `DB_PATH` | SQLite path; parent dirs are created if missing |
+| `--db <path>` | `-d` | `~/.plainnote/plainnote.db` | `DB_PATH` | SQLite path; parent dirs are created if missing |
 | `--sensitive <path>` | — | bundled lexicon | `SENSITIVE_PATH` | Sensitive-word list (one term per line); blocks create/update on title & content |
 | `--help` | `-h` | — | — | Print help and exit |
 | `--version` | `-V` | — | — | Print version and exit |
@@ -113,11 +113,36 @@ plainnote/
 └── vite.config.ts
 ```
 
+## Deploy
+
+Build and pack locally:
+
+```bash
+npm ci
+npm run build
+npm pack
+```
+
+Upload the `.tgz`, extract it into the server directory, then install deps:
+
+```bash
+npm install --omit=dev
+```
+
+**BT Panel:** Website → Add Node project → pick the extract directory → start option `start` (`node dist/cli.js`) → port `3123`. Point the domain reverse proxy to `http://127.0.0.1:3123`.
+
+Without a panel: `npm start` (or `node dist/cli.js`), default `127.0.0.1:3123`.
+
 ## Publish notes
 
-`package.json` is set up for a CLI bin (`plainnote` → `dist/cli.js`) and packs only `dist`. Run `npm run build` before publish so `dist/` (including `dist/static`) is complete.
+npm package name is `plainshare`; CLI bin is `plainnote` → `dist/cli.js`. Run `npm run build` before publish.
 
-The public npm name `plainnote` is already taken by another package — do **not** assume `npx plainnote` installs this project. Publish under an available name (or a scoped package) when you are ready.
+```bash
+npm i -g plainshare
+plainnote
+# or
+npx plainshare
+```
 
 ## License
 

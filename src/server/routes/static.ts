@@ -1,7 +1,8 @@
 import type { FastifyInstance, FastifyReply, FastifyRequest } from 'fastify';
 import fastifyStatic from '@fastify/static';
 import { existsSync } from 'node:fs';
-import { join, normalize, sep } from 'node:path';
+import { dirname, join, normalize, sep } from 'node:path';
+import { fileURLToPath } from 'node:url';
 
 /**
  * 托管 Vite 构建产物，并为前端 history 路由提供 index.html 回退。
@@ -43,6 +44,12 @@ export function registerStaticRoutes(app: FastifyInstance, staticDir: string): v
   });
 }
 
+/** 相对本模块定位包内前端产物（npx / 全局安装时不依赖 process.cwd）。 */
 export function defaultStaticDir(): string {
-  return join(process.cwd(), 'dist', 'static');
+  const here = dirname(fileURLToPath(import.meta.url));
+  // 生产：dist/server/routes/static.js → dist/static
+  const fromDist = join(here, '..', '..', 'static');
+  if (existsSync(fromDist)) return fromDist;
+  // 开发：tsx 跑 src/server/routes/static.ts → 仓库根 dist/static
+  return join(here, '..', '..', '..', 'dist', 'static');
 }
