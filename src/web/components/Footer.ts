@@ -16,6 +16,7 @@ export function footerHtml(): string {
       <div class="footer-right">
         <span class="hint-link">${escapeHtml(m.footerHint)}</span>
         <a class="nav-link" href="${docsPath()}">${escapeHtml(m.footerApi)}</a>
+        <a class="nav-link" href="https://github.com/rockyflux/PlainNote" target="_blank" rel="noopener noreferrer">GitHub</a>
       </div>
     </footer>
   `;

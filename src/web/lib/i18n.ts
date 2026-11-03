@@ -140,6 +140,9 @@ export type Messages = {
   apiErrors: ReadonlyArray<{ http: string; code: string; desc: string }>;
   apiCreateCurlBody: string;
   apiPatchCurlBody: string;
+  apiResponseLabel: string;
+  /** 创建成功返回示例；可用 {{origin}} */
+  apiCreateResponse: string;
 };
 
 const ZH: Messages = {
@@ -347,8 +350,21 @@ const ZH: Messages = {
     { http: '429', code: 'RATE_LIMITED', desc: '创建过于频繁（按 IP 限流）' },
     { http: '500', code: 'INTERNAL_ERROR', desc: '服务端异常' },
   ],
-  apiCreateCurlBody: `{"title":"特性开关","content":"# 开关\\nDARK_MODE=true\\n"}`,
-  apiPatchCurlBody: `{"content":"# 更新后的正文\\n"}`,
+  apiCreateCurlBody: `{"title":"标题","content":"要分享的内容"}`,
+  apiPatchCurlBody: `{"content":"更新后的内容"}`,
+  apiResponseLabel: '返回示例',
+  apiCreateResponse: `{
+  "id": "a1b2c3d4e5",
+  "secret": "AbCdEfGhIjKlMnOpQrStUvWx",
+  "title": "标题",
+  "content": "要分享的内容",
+  "format": "text",
+  "createdAt": 1735689600000,
+  "updatedAt": 1735689600000,
+  "editUrl": "{{origin}}/edit/AbCdEfGhIjKlMnOpQrStUvWx",
+  "noteUrl": "{{origin}}/note/a1b2c3d4e5",
+  "rawUrl": "{{origin}}/raw/a1b2c3d4e5"
+}`,
 };
 
 const EN: Messages = {
@@ -557,8 +573,21 @@ const EN: Messages = {
     { http: '429', code: 'RATE_LIMITED', desc: 'Create rate limit exceeded (per IP)' },
     { http: '500', code: 'INTERNAL_ERROR', desc: 'Server error' },
   ],
-  apiCreateCurlBody: `{"title":"Feature flags","content":"# Flags\\nDARK_MODE=true\\n"}`,
-  apiPatchCurlBody: `{"content":"# Updated body\\n"}`,
+  apiCreateCurlBody: `{"title":"Title","content":"Content to share"}`,
+  apiPatchCurlBody: `{"content":"Updated content"}`,
+  apiResponseLabel: 'Response example',
+  apiCreateResponse: `{
+  "id": "a1b2c3d4e5",
+  "secret": "AbCdEfGhIjKlMnOpQrStUvWx",
+  "title": "Title",
+  "content": "Content to share",
+  "format": "text",
+  "createdAt": 1735689600000,
+  "updatedAt": 1735689600000,
+  "editUrl": "{{origin}}/edit/AbCdEfGhIjKlMnOpQrStUvWx",
+  "noteUrl": "{{origin}}/note/a1b2c3d4e5",
+  "rawUrl": "{{origin}}/raw/a1b2c3d4e5"
+}`,
 };
 
 const MESSAGES: Record<Lang, Messages> = { zh: ZH, en: EN };

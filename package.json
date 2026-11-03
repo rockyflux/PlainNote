@@ -1,15 +1,16 @@
 {
   "name": "plainshare",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "description": "Anonymous Markdown notes with a shareable web view and a curl-friendly raw text link.",
   "license": "MIT",
   "type": "module",
   "bin": {
-    "plainnote": "./dist/cli.js"
+    "plainnote": "dist/cli.js"
   },
   "main": "./dist/server/index.js",
   "files": [
-    "dist"
+    "dist",
+    "run.sh"
   ],
   "engines": {
     "node": ">=18.0.0"
@@ -21,6 +22,7 @@
     "build:server": "tsc -p tsconfig.json && node scripts/copy-server-data.mjs",
     "build": "npm run build:web && npm run build:server",
     "start": "node dist/cli.js",
+    "pack": "npm pack --pack-destination .",
     "test": "node test/sanitize.mjs",
     "clean": "rm -rf dist"
   },

@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 import { Command } from 'commander';
 import { existsSync } from 'node:fs';
-import { homedir } from 'node:os';
+import { homedir, networkInterfaces } from 'node:os';
 import { join, resolve } from 'node:path';
 import { createServer } from './server/index.js';
 import { defaultStaticDir } from './server/routes/static.js';
@@ -19,6 +19,20 @@ function parsePort(raw: string | undefined): number {
     process.exit(1);
   }
   return port;
+}
+
+/** 本机非回环 IPv4，用于启动时打印局域网访问地址。 */
+function lanIPv4Addresses(): string[] {
+  const addresses: string[] = [];
+  for (const entries of Object.values(networkInterfaces())) {
+    if (!entries) continue;
+    for (const net of entries) {
+      // Node 18+ 运行时可能是数字 4；类型定义多为 'IPv4'
+      if (String(net.family) !== 'IPv4' && String(net.family) !== '4') continue;
+      if (!net.internal) addresses.push(net.address);
+    }
+  }
+  return addresses;
 }
 
 function formatStartupError(error: unknown): string {
@@ -64,13 +78,24 @@ async function main(): Promise<void> {
 
   await server.app.listen({ host, port });
 
+  const listenAll = host === '0.0.0.0' || host === '::';
+  const localUrl = `http://${listenAll ? '127.0.0.1' : host}:${port}`;
+  // 监听全部网卡时打印可访问的局域网地址；仅本机监听时也打印 IP，方便确认本机地址。
+  const networkIps =
+    listenAll || host === '127.0.0.1' || host === 'localhost' || host === '::1'
+      ? lanIPv4Addresses()
+      : [];
+
   console.log('PlainNote running');
-  console.log(`  Local:   http://${host === '0.0.0.0' ? '127.0.0.1' : host}:${port}`);
+  console.log(`  Local:   ${localUrl}`);
+  for (const ip of networkIps) {
+    console.log(`  Network: http://${ip}:${port}`);
+  }
   console.log(`  DB:      ${dbPath}`);
   if (sensitivePath) console.log(`  Sensitive: ${sensitivePath}`);
-  if (host === '0.0.0.0') {
+  if (listenAll) {
     console.warn(
-      '  ⚠ 当前已监听 0.0.0.0 对外暴露，任何可访问本机的人都能创建/读取笔记，请确认网络环境可信。',
+      '  ⚠ 当前已监听全部网卡对外暴露，任何可访问本机的人都能创建/读取笔记，请确认网络环境可信。',
     );
   }
   console.log('  Press Ctrl+C to stop');

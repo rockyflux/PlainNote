@@ -18,9 +18,18 @@ function endpoint(
   desc: string,
   curl: string,
   copyLabel: string,
-  note?: string,
+  opts?: { note?: string; responseLabel?: string; response?: string },
 ): string {
   const methodClass = method.toLowerCase();
+  const responseBlock =
+    opts?.response && opts.responseLabel
+      ? `
+      <p class="api-desc" style="margin-top:12px;">${escapeHtml(opts.responseLabel)}</p>
+      <div class="api-code-wrap">
+        <pre class="api-code"><code>${escapeHtml(opts.response)}</code></pre>
+        <button type="button" class="api-copy" data-copy>${escapeHtml(copyLabel)}</button>
+      </div>`
+      : '';
   return `
     <section class="api-endpoint">
       <div class="api-endpoint-head">
@@ -28,11 +37,12 @@ function endpoint(
         <code class="api-path">${escapeHtml(path)}</code>
       </div>
       <p class="api-desc">${escapeHtml(desc)}</p>
-      ${note ? `<p class="api-note">${escapeHtml(note)}</p>` : ''}
+      ${opts?.note ? `<p class="api-note">${escapeHtml(opts.note)}</p>` : ''}
       <div class="api-code-wrap">
         <pre class="api-code"><code>${escapeHtml(curl)}</code></pre>
         <button type="button" class="api-copy" data-copy>${escapeHtml(copyLabel)}</button>
       </div>
+      ${responseBlock}
     </section>
   `;
 }
@@ -61,6 +71,7 @@ export function mountApi(root: HTMLElement, langHint?: Lang): void {
   -d '${m.apiPatchCurlBody}'`;
   const deleteCurl = `curl -X DELETE ${origin}/api/notes/<secret>`;
   const rawCurl = `curl ${origin}/raw/<id>`;
+  const createResponse = m.apiCreateResponse.replaceAll('{{origin}}', origin);
 
   document.title = `${m.apiTitle} · PlainNote`;
 
@@ -105,12 +116,15 @@ export function mountApi(root: HTMLElement, langHint?: Lang): void {
 
       <h2 class="api-section-title">${escapeHtml(m.apiSectionTitle)}</h2>
 
-      ${endpoint('POST', '/api/notes', m.apiPostCreate, createCurl, m.copy)}
+      ${endpoint('POST', '/api/notes', m.apiPostCreate, createCurl, m.copy, {
+        responseLabel: m.apiResponseLabel,
+        response: createResponse,
+      })}
       ${endpoint('GET', '/api/notes/by-secret/:secret', m.apiGetBySecret, bySecretCurl, m.copy)}
       ${endpoint('GET', '/api/notes/:id', m.apiGetPublic, publicCurl, m.copy)}
       ${endpoint('PATCH', '/api/notes/:secret', m.apiPatch, patchCurl, m.copy)}
       ${endpoint('DELETE', '/api/notes/:secret', m.apiDelete, deleteCurl, m.copy)}
-      ${endpoint('GET', '/raw/:id', m.apiRaw, rawCurl, m.copy, m.apiRawNote)}
+      ${endpoint('GET', '/raw/:id', m.apiRaw, rawCurl, m.copy, { note: m.apiRawNote })}
 
       <section class="api-card">
         <h2>${escapeHtml(m.apiErrorsTitle)}</h2>
