@@ -1,6 +1,6 @@
 {
   "name": "plainshare",
-  "version": "0.1.4",
+  "version": "0.1.5",
   "description": "Anonymous Markdown notes with a shareable web view and a curl-friendly raw text link.",
   "license": "MIT",
   "type": "module",
@@ -23,7 +23,7 @@
     "build": "npm run build:web && npm run build:server",
     "start": "node dist/cli.js",
     "pack": "npm pack --pack-destination .",
-    "test": "node test/sanitize.mjs",
+    "test": "node test/sanitize.mjs && node test/update-check.mjs",
     "clean": "rm -rf dist"
   },
   "dependencies": {

@@ -1,16 +1,22 @@
 #!/usr/bin/env node
 import { Command } from 'commander';
 import { existsSync } from 'node:fs';
+import { createRequire } from 'node:module';
 import { homedir, networkInterfaces } from 'node:os';
 import { join, resolve } from 'node:path';
 import { createServer } from './server/index.js';
 import { defaultStaticDir } from './server/routes/static.js';
+import { maybeOfferUpdate } from './update-check.js';
 
 const DEFAULT_PORT = 3123;
 const DEFAULT_HOST = '127.0.0.1';
 const DEFAULT_DB = join(homedir(), '.plainnote', 'plainnote.db');
 /** 空字符串表示使用包内默认词库路径。 */
 const DEFAULT_SENSITIVE = '';
+
+const require = createRequire(import.meta.url);
+const pkgJson = require('../package.json') as { name: string; version: string };
+const pkg = { name: pkgJson.name, version: pkgJson.version };
 
 function parsePort(raw: string | undefined): number {
   const port = Number(raw ?? DEFAULT_PORT);
@@ -51,7 +57,7 @@ async function main(): Promise<void> {
   program
     .name('plainnote')
     .description('Anonymous Markdown notes with a web view and a curl-friendly raw link.')
-    .version('0.1.4')
+    .version(pkg.version)
     .option('-p, --port <n>', `监听端口（默认 ${DEFAULT_PORT}）`, process.env.PORT ?? String(DEFAULT_PORT))
     .option('-H, --host <addr>', `监听地址（默认 ${DEFAULT_HOST}，仅本机）`, process.env.HOST ?? DEFAULT_HOST)
     .option('-d, --db <path>', `SQLite 数据库文件路径（默认 ${DEFAULT_DB}）`, process.env.DB_PATH ?? DEFAULT_DB)
@@ -60,9 +66,24 @@ async function main(): Promise<void> {
       '敏感词库文件路径（默认使用包内 server/data/sensitive.txt）',
       process.env.SENSITIVE_PATH ?? DEFAULT_SENSITIVE,
     )
+    .option('--no-update-check', '跳过 npm 版本更新检测')
     .parse(process.argv);
 
-  const options = program.opts<{ port: string; host: string; db: string; sensitive: string }>();
+  const options = program.opts<{
+    port: string;
+    host: string;
+    db: string;
+    sensitive: string;
+    updateCheck: boolean;
+  }>();
+
+  await maybeOfferUpdate({
+    packageName: pkg.name,
+    currentVersion: pkg.version,
+    argv: process.argv.slice(2).filter((arg) => arg !== '--no-update-check'),
+    skip: options.updateCheck === false,
+  });
+
   const port = parsePort(options.port);
   const host = options.host || DEFAULT_HOST;
   const dbPath = resolve(options.db || DEFAULT_DB);

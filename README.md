@@ -66,6 +66,7 @@ npm start -- [options]
 | `--host <addr>` | `-H` | `127.0.0.1` | `HOST` | Bind address; use `0.0.0.0` to expose (prints a warning) |
 | `--db <path>` | `-d` | `~/.plainnote/plainnote.db` | `DB_PATH` | SQLite path; parent dirs are created if missing |
 | `--sensitive <path>` | — | bundled lexicon | `SENSITIVE_PATH` | Sensitive-word list (one term per line); blocks create/update on title & content |
+| `--no-update-check` | — | check on | `PLAINNOTE_NO_UPDATE=1` | Skip npm update check on startup; if newer, interactive TTYs can press `y` to relaunch via `@latest` |
 | `--help` | `-h` | — | — | Print help and exit |
 | `--version` | `-V` | — | — | Print version and exit |
 

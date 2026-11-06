@@ -66,6 +66,7 @@ npm start -- [选项]
 | `--host <addr>` | `-H` | `127.0.0.1` | `HOST` | 监听地址；传 `0.0.0.0` 才对外并打印警告 |
 | `--db <path>` | `-d` | `~/.plainnote/plainnote.db` | `DB_PATH` | SQLite 文件路径，目录不存在时自动创建 |
 | `--sensitive <path>` | — | 包内词库 | `SENSITIVE_PATH` | 敏感词库（一行一词）；创建/更新标题与正文时拦截 |
+| `--no-update-check` | — | 开启检测 | `PLAINNOTE_NO_UPDATE=1` | 跳过启动时的 npm 新版本检测；有更新时交互终端可输入 `y` 用 `@latest` 重启 |
 | `--help` | `-h` | — | — | 打印帮助并退出 |
 | `--version` | `-V` | — | — | 打印版本号并退出 |
 
