@@ -23,6 +23,17 @@ port_show() {
   ss -lntp 2>/dev/null | awk -v p=":${PORT}$" 'NR>1 && $4 ~ p'
 }
 
+# 本机非回环 IPv4，用于打印局域网访问地址。
+lan_ipv4_addresses() {
+  if command -v ip >/dev/null 2>&1; then
+    ip -4 -o addr show scope global 2>/dev/null | awk '{print $4}' | cut -d/ -f1
+    return
+  fi
+  if command -v hostname >/dev/null 2>&1; then
+    hostname -I 2>/dev/null | tr ' ' '\n' | awk '/^[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+$/ && $0 !~ /^127\./'
+  fi
+}
+
 read_pid() {
   [ -f $PID_FILE ] || return 1
   local pid
@@ -83,6 +94,10 @@ do_start() {
     if port_in_use; then
       info 启动成功 PID=$pid 监听 $HOST:$PORT
       info 本机访问 http://127.0.0.1:$PORT
+      local ip
+      for ip in $(lan_ipv4_addresses); do
+        info 局域网  http://$ip:$PORT
+      done
       info 日志文件 $LOG_FILE
       return 0
     fi

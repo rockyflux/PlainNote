@@ -51,7 +51,7 @@ async function main(): Promise<void> {
   program
     .name('plainnote')
     .description('Anonymous Markdown notes with a web view and a curl-friendly raw link.')
-    .version('0.1.1')
+    .version('0.1.3')
     .option('-p, --port <n>', `监听端口（默认 ${DEFAULT_PORT}）`, process.env.PORT ?? String(DEFAULT_PORT))
     .option('-H, --host <addr>', `监听地址（默认 ${DEFAULT_HOST}，仅本机）`, process.env.HOST ?? DEFAULT_HOST)
     .option('-d, --db <path>', `SQLite 数据库文件路径（默认 ${DEFAULT_DB}）`, process.env.DB_PATH ?? DEFAULT_DB)
