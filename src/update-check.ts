@@ -90,8 +90,8 @@ export function relaunchWithLatest(packageName: string, args: string[]): number 
     windowsHide: true,
   });
   if (result.error) {
-    console.error(`更新启动失败：${result.error.message}`);
-    console.error(`请手动执行：npx ${packageName}@latest`);
+    console.error(`Failed to relaunch update: ${result.error.message}`);
+    console.error(`Please run manually: npx ${packageName}@latest`);
     return 1;
   }
   return result.status ?? 1;
@@ -116,17 +116,17 @@ export async function maybeOfferUpdate(options: {
   if (!latest || !isNewerVersion(latest, options.currentVersion)) return 'continue';
 
   console.log(
-    `发现新版本 ${latest}（当前 ${options.currentVersion}）。更新：npx ${options.packageName}@latest`,
+    `Update available: ${latest} (current ${options.currentVersion}). Run: npx ${options.packageName}@latest`,
   );
 
   if (!canPrompt()) return 'continue';
 
-  const yes = await askYesNo('是否立即用最新版启动？[y/N] ');
+  const yes = await askYesNo('Relaunch with the latest version now? [y/N] ');
   if (!yes) {
-    console.log('已跳过更新，继续启动当前版本。');
+    console.log('Skipped update; continuing with the current version.');
     return 'continue';
   }
 
-  console.log(`正在启动 ${options.packageName}@${latest}…`);
+  console.log(`Starting ${options.packageName}@${latest}…`);
   process.exit(relaunchWithLatest(options.packageName, options.argv));
 }

@@ -66,6 +66,8 @@ npm start -- [选项]
 | `--host <addr>` | `-H` | `0.0.0.0` | `HOST` | 监听地址；默认对外（含局域网）并打印警告；仅本机用 `127.0.0.1` |
 | `--db <path>` | `-d` | `~/.plainnote/plainnote.db` | `DB_PATH` | SQLite 文件路径，目录不存在时自动创建 |
 | `--sensitive <path>` | — | 包内词库 | `SENSITIVE_PATH` | 敏感词库（一行一词）；创建/更新标题与正文时拦截 |
+| `--admin-password <pwd>` | — | 首次自动生成 | `ADMIN_PASSWORD` | 设置管理后台口令，写入数据库同目录的 `admin.password` |
+| `--show-admin-password` | — | 否 | — | 启动时打印已有管理口令（默认仅首次生成时打印） |
 | `--no-update-check` | — | 开启检测 | `PLAINNOTE_NO_UPDATE=1` | 跳过启动时的 npm 新版本检测；有更新时交互终端可输入 `y` 用 `@latest` 重启 |
 | `--help` | `-h` | — | — | 打印帮助并退出 |
 | `--version` | `-V` | — | — | 打印版本号并退出 |
@@ -84,6 +86,10 @@ npm start -- [选项]
 | `PATCH` | `/api/notes/:secret` | 更新标题 / 正文 / 格式 / 自定义 `id` |
 | `DELETE` | `/api/notes/:secret` | 删除 |
 | `GET` | `/raw/:id` | 纯文本正文 |
+| `POST` | `/api/admin/login` | 校验管理口令 |
+| `GET` | `/api/admin/notes` | 仅分页列表（需 `Authorization: Bearer <口令>`） |
+
+**管理后台：** 打开 `/admin`。管理口令只用于解锁笔记列表；查看 / 修改 / 删除仍走原有 `/api/notes/:secret`（凭笔记 secret）。首次启动会在数据库同目录生成 `admin.password` 并打印口令。
 
 **服务端限制：** 正文 ≤ 30 000 码点；标题 ≤ 200；同 IP 创建约 10 次/分钟、100 次/自然日；标题/正文命中敏感词库时返回 422。
 

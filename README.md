@@ -66,6 +66,8 @@ npm start -- [options]
 | `--host <addr>` | `-H` | `0.0.0.0` | `HOST` | Bind address; default exposes LAN (prints a warning); use `127.0.0.1` for localhost only |
 | `--db <path>` | `-d` | `~/.plainnote/plainnote.db` | `DB_PATH` | SQLite path; parent dirs are created if missing |
 | `--sensitive <path>` | — | bundled lexicon | `SENSITIVE_PATH` | Sensitive-word list (one term per line); blocks create/update on title & content |
+| `--admin-password <pwd>` | — | auto-generated once | `ADMIN_PASSWORD` | Set admin password; written to `admin.password` next to the DB |
+| `--show-admin-password` | — | off | — | Print the existing admin password on startup (only printed by default when first generated) |
 | `--no-update-check` | — | check on | `PLAINNOTE_NO_UPDATE=1` | Skip npm update check on startup; if newer, interactive TTYs can press `y` to relaunch via `@latest` |
 | `--help` | `-h` | — | — | Print help and exit |
 | `--version` | `-V` | — | — | Print version and exit |
@@ -84,6 +86,10 @@ Full curl examples live in the running app at `/docs` (EN) or `/zh/docs` (ZH).
 | `PATCH` | `/api/notes/:secret` | Update title / content / format / custom `id` |
 | `DELETE` | `/api/notes/:secret` | Delete |
 | `GET` | `/raw/:id` | Plaintext body |
+| `POST` | `/api/admin/login` | Verify admin password |
+| `GET` | `/api/admin/notes` | Paginated list only (`Authorization: Bearer <password>`) |
+
+**Admin UI:** open `/admin`. The admin password unlocks the note list; view / update / delete still use the existing `/api/notes/:secret` APIs with each note's secret. On first start the server writes `admin.password` next to the DB and prints the password.
 
 **Limits (server):** content ≤ 30 000 code points; title ≤ 200; create rate ≈ 10/min and 100/day per IP; title/content matching the sensitive lexicon returns 422.
 

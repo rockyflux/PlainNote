@@ -8,6 +8,7 @@ import {
 import { registerErrorHandler } from './http/errors.js';
 import { registerSecurityHooks, safeReqSerializer } from './http/security.js';
 import { registerNoteApiRoutes } from './routes/notes.api.js';
+import { registerAdminApiRoutes } from './routes/admin.api.js';
 import { registerRawRoute } from './routes/raw.js';
 import { registerStaticRoutes } from './routes/static.js';
 
@@ -16,6 +17,8 @@ export interface ServerOptions {
   staticDir: string;
   /** 敏感词库路径；默认 server/data/sensitive.txt */
   sensitivePath?: string;
+  /** 管理后台口令；未提供则不注册管理 API。 */
+  adminPassword?: string;
 }
 
 export interface PlainNoteServer {
@@ -52,6 +55,9 @@ export function createServer(options: ServerOptions): PlainNoteServer {
   );
 
   registerNoteApiRoutes(app, service);
+  if (options.adminPassword) {
+    registerAdminApiRoutes(app, service, options.adminPassword);
+  }
   registerRawRoute(app, service);
   registerStaticRoutes(app, options.staticDir);
 

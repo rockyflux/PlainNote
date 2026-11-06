@@ -2,6 +2,7 @@ import type { FastifyInstance, FastifyReply, FastifyRequest } from 'fastify';
 
 export const ErrorCode = {
   BAD_REQUEST: 'BAD_REQUEST',
+  UNAUTHORIZED: 'UNAUTHORIZED',
   NOTE_NOT_FOUND: 'NOTE_NOT_FOUND',
   VALIDATION_FAILED: 'VALIDATION_FAILED',
   RATE_LIMITED: 'RATE_LIMITED',

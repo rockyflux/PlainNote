@@ -40,12 +40,22 @@ export interface UpdateNotePatch {
   updatedAt: number;
 }
 
+/** 管理端列表查询参数。 */
+export interface ListNotesQuery {
+  limit: number;
+  offset: number;
+  /** 匹配 id / secret / title / content / ip 的模糊搜索（可选）。 */
+  q?: string;
+}
+
 export interface NoteRepository {
   create(input: CreateNoteInput): NoteRecord;
   findById(id: string): NoteRecord | undefined;
   findBySecret(secret: string): NoteRecord | undefined;
   updateBySecret(secret: string, patch: UpdateNotePatch): NoteRecord | undefined;
   deleteBySecret(secret: string): boolean;
+  list(query: ListNotesQuery): NoteRecord[];
+  count(q?: string): number;
   /** 统计指定 IP 在 sinceMs（含）之后创建的笔记数；ip 为 null 时按空串匹配。 */
   countByIpSince(ip: string | null, sinceMs: number): number;
   /** 在同一 SQLite 事务中执行，保证限流计数与写入原子。 */

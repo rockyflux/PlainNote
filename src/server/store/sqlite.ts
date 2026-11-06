@@ -3,6 +3,7 @@ import { mkdirSync } from 'node:fs';
 import { dirname, resolve } from 'node:path';
 import type {
   CreateNoteInput,
+  ListNotesQuery,
   NoteRecord,
   NoteRepository,
   UpdateNotePatch,
@@ -37,6 +38,22 @@ interface Stmt {
   update: Database.Statement;
   delete: Database.Statement;
   countByIpSince: Database.Statement;
+  countAll: Database.Statement;
+  countSearch: Database.Statement;
+  listAll: Database.Statement;
+  listSearch: Database.Statement;
+}
+
+const SEARCH_WHERE = `(
+  id LIKE ? ESCAPE '\\'
+  OR secret LIKE ? ESCAPE '\\'
+  OR IFNULL(title, '') LIKE ? ESCAPE '\\'
+  OR content LIKE ? ESCAPE '\\'
+  OR IFNULL(ip, '') LIKE ? ESCAPE '\\'
+)`;
+
+function escapeLike(raw: string): string {
+  return raw.replace(/([\\%_])/g, '\\$1');
 }
 
 function migrateColumns(db: Database.Database): void {
@@ -74,7 +91,7 @@ export class SqliteNoteRepository implements NoteRepository {
     } catch (err) {
       const detail = err instanceof Error ? err.message : String(err);
       throw new Error(
-        `数据库文件无法打开或已损坏：${absolute}\n原因：${detail}\n请检查文件是否存在、权限是否可读，或更换 --db 路径后重试。`,
+        `Database file could not be opened or is corrupted: ${absolute}\nCause: ${detail}\nCheck that the file exists and is readable, or pass a different --db path.`,
       );
     }
 
@@ -98,7 +115,20 @@ export class SqliteNoteRepository implements NoteRepository {
       countByIpSince: this.db.prepare(
         `SELECT COUNT(*) AS cnt FROM notes WHERE ip IS ? AND created_at >= ?`,
       ),
+      countAll: this.db.prepare(`SELECT COUNT(*) AS cnt FROM notes`),
+      countSearch: this.db.prepare(`SELECT COUNT(*) AS cnt FROM notes WHERE ${SEARCH_WHERE}`),
+      listAll: this.db.prepare(
+        `SELECT ${SELECT_COLS} FROM notes ORDER BY updated_at DESC LIMIT ? OFFSET ?`,
+      ),
+      listSearch: this.db.prepare(
+        `SELECT ${SELECT_COLS} FROM notes WHERE ${SEARCH_WHERE}
+         ORDER BY updated_at DESC LIMIT ? OFFSET ?`,
+      ),
     };
+  }
+
+  private searchPattern(q: string): string {
+    return `%${escapeLike(q)}%`;
   }
 
   countByIpSince(ip: string | null, sinceMs: number): number {
@@ -154,6 +184,40 @@ export class SqliteNoteRepository implements NoteRepository {
   deleteBySecret(secret: string): boolean {
     const result = this.stmt.delete.run(secret);
     return result.changes > 0;
+  }
+
+  list(query: ListNotesQuery): NoteRecord[] {
+    const q = query.q?.trim();
+    if (!q) {
+      return this.stmt.listAll.all(query.limit, query.offset) as NoteRecord[];
+    }
+    const pattern = this.searchPattern(q);
+    return this.stmt.listSearch.all(
+      pattern,
+      pattern,
+      pattern,
+      pattern,
+      pattern,
+      query.limit,
+      query.offset,
+    ) as NoteRecord[];
+  }
+
+  count(q?: string): number {
+    const trimmed = q?.trim();
+    if (!trimmed) {
+      const row = this.stmt.countAll.get() as { cnt: number } | undefined;
+      return row?.cnt ?? 0;
+    }
+    const pattern = this.searchPattern(trimmed);
+    const row = this.stmt.countSearch.get(
+      pattern,
+      pattern,
+      pattern,
+      pattern,
+      pattern,
+    ) as { cnt: number } | undefined;
+    return row?.cnt ?? 0;
   }
 
   close(): void {

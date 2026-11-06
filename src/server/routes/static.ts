@@ -24,6 +24,7 @@ export function registerStaticRoutes(app: FastifyInstance, staticDir: string): v
   app.get('/', serveIndex);
   app.get('/docs', serveIndex);
   app.get('/zh/docs', serveIndex);
+  app.get('/admin', serveIndex);
   app.get('/edit/:secret', serveIndex);
   app.get('/note/:id', serveIndex);
 

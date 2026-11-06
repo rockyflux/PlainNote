@@ -3,6 +3,7 @@ import { mountHome } from './pages/HomePage';
 import { mountEdit } from './pages/EditPage';
 import { mountNote } from './pages/NotePage';
 import { mountApi } from './pages/ApiPage';
+import { mountAdmin } from './pages/AdminPage';
 import { renderErrorView } from './components/ErrorView';
 import { applyDocumentLang, langFromDocsPath, t } from './lib/i18n';
 
@@ -14,6 +15,10 @@ function route(): void {
 
   if (path === '/' || path === '') {
     mountHome(root);
+    return;
+  }
+  if (path === '/admin' || path === '/admin/') {
+    mountAdmin(root);
     return;
   }
   const docsLang = langFromDocsPath(path);

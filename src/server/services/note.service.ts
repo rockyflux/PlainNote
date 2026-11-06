@@ -45,6 +45,28 @@ export interface NoteFullDto extends NotePublicDto {
   rawUrl: string;
 }
 
+/** 管理端列表项：含 secret，正文仅预览。 */
+export interface AdminNoteListItem {
+  id: string;
+  secret: string;
+  title: string | null;
+  format: NoteFormat;
+  contentPreview: string;
+  contentLength: number;
+  ip: string | null;
+  createdAt: number;
+  updatedAt: number;
+}
+
+export interface AdminNoteListResult {
+  items: AdminNoteListItem[];
+  total: number;
+  page: number;
+  pageSize: number;
+}
+
+const PREVIEW_MAX = 160;
+
 export interface CreateNoteBody {
   title?: string | null;
   content?: string;
@@ -324,11 +346,49 @@ export class NoteService {
     this.log?.info(`delete id=${record.id}`);
   }
 
+  listForAdmin(options: {
+    page: number;
+    pageSize: number;
+    q?: string;
+  }): AdminNoteListResult {
+    const page = Math.max(1, Math.floor(options.page) || 1);
+    const pageSize = Math.min(100, Math.max(1, Math.floor(options.pageSize) || 20));
+    const q = options.q?.trim() || undefined;
+    const total = this.repo.count(q);
+    const offset = (page - 1) * pageSize;
+    const rows = this.repo.list({ limit: pageSize, offset, q });
+    return {
+      items: rows.map((r) => this.toAdminListItem(r)),
+      total,
+      page,
+      pageSize,
+    };
+  }
+
   /** 供 Raw 路由直接取原始内容，不存在抛 404。 */
   getRawContent(id: string): { content: string } {
     const record = this.repo.findById(id);
     if (!record) throw noteNotFound();
     return { content: record.content };
+  }
+
+  private toAdminListItem(record: NoteRecord): AdminNoteListItem {
+    const plain = record.content.replace(/\s+/g, ' ').trim();
+    const preview =
+      codePointLength(plain) <= PREVIEW_MAX
+        ? plain
+        : `${[...plain].slice(0, PREVIEW_MAX).join('')}…`;
+    return {
+      id: record.id,
+      secret: record.secret,
+      title: record.title,
+      format: record.format === 'text' ? 'text' : 'markdown',
+      contentPreview: preview,
+      contentLength: codePointLength(record.content),
+      ip: record.ip,
+      createdAt: record.created_at,
+      updatedAt: record.updated_at,
+    };
   }
 
   private toPublic(record: NoteRecord): NotePublicDto {
