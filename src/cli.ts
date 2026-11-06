@@ -9,7 +9,7 @@ import { defaultStaticDir } from './server/routes/static.js';
 import { maybeOfferUpdate } from './update-check.js';
 
 const DEFAULT_PORT = 3123;
-const DEFAULT_HOST = '127.0.0.1';
+const DEFAULT_HOST = '0.0.0.0';
 const DEFAULT_DB = join(homedir(), '.plainnote', 'plainnote.db');
 /** 空字符串表示使用包内默认词库路径。 */
 const DEFAULT_SENSITIVE = '';
@@ -59,7 +59,7 @@ async function main(): Promise<void> {
     .description('Anonymous Markdown notes with a web view and a curl-friendly raw link.')
     .version(pkg.version)
     .option('-p, --port <n>', `监听端口（默认 ${DEFAULT_PORT}）`, process.env.PORT ?? String(DEFAULT_PORT))
-    .option('-H, --host <addr>', `监听地址（默认 ${DEFAULT_HOST}，仅本机）`, process.env.HOST ?? DEFAULT_HOST)
+    .option('-H, --host <addr>', `监听地址（默认 ${DEFAULT_HOST}，含局域网；仅本机用 127.0.0.1）`, process.env.HOST ?? DEFAULT_HOST)
     .option('-d, --db <path>', `SQLite 数据库文件路径（默认 ${DEFAULT_DB}）`, process.env.DB_PATH ?? DEFAULT_DB)
     .option(
       '--sensitive <path>',
@@ -101,11 +101,8 @@ async function main(): Promise<void> {
 
   const listenAll = host === '0.0.0.0' || host === '::';
   const localUrl = `http://${listenAll ? '127.0.0.1' : host}:${port}`;
-  // 监听全部网卡时打印可访问的局域网地址；仅本机监听时也打印 IP，方便确认本机地址。
-  const networkIps =
-    listenAll || host === '127.0.0.1' || host === 'localhost' || host === '::1'
-      ? lanIPv4Addresses()
-      : [];
+  // 仅在对外监听时打印局域网地址，避免 127.0.0.1 绑定时误导为可访问。
+  const networkIps = listenAll ? lanIPv4Addresses() : [];
 
   console.log('PlainNote running');
   console.log(`  Local:   ${localUrl}`);

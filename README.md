@@ -33,7 +33,7 @@ npm run build
 npm start
 ```
 
-Opens on <http://127.0.0.1:3123> by default (DB `~/.plainnote/plainnote.db`).
+Listens on all interfaces by default (`0.0.0.0:3123`). Local: <http://127.0.0.1:3123>; LAN: the `Network` URLs printed at startup (DB `~/.plainnote/plainnote.db`).
 
 ### Dev mode (hot reload)
 
@@ -63,7 +63,7 @@ npm start -- [options]
 | Flag | Alias | Default | Env | Description |
 |---|---|---|---|---|
 | `--port <n>` | `-p` | `3123` | `PORT` | Listen port (1–65535) |
-| `--host <addr>` | `-H` | `127.0.0.1` | `HOST` | Bind address; use `0.0.0.0` to expose (prints a warning) |
+| `--host <addr>` | `-H` | `0.0.0.0` | `HOST` | Bind address; default exposes LAN (prints a warning); use `127.0.0.1` for localhost only |
 | `--db <path>` | `-d` | `~/.plainnote/plainnote.db` | `DB_PATH` | SQLite path; parent dirs are created if missing |
 | `--sensitive <path>` | — | bundled lexicon | `SENSITIVE_PATH` | Sensitive-word list (one term per line); blocks create/update on title & content |
 | `--no-update-check` | — | check on | `PLAINNOTE_NO_UPDATE=1` | Skip npm update check on startup; if newer, interactive TTYs can press `y` to relaunch via `@latest` |
@@ -132,7 +132,7 @@ npm install --omit=dev
 
 **BT Panel:** Website → Add Node project → pick the extract directory → start option `start` (`node dist/cli.js`) → port `3123`. Point the domain reverse proxy to `http://127.0.0.1:3123`.
 
-Without a panel: `npm start` (or `node dist/cli.js`), default `127.0.0.1:3123`.
+Without a panel: `npm start` (or `node dist/cli.js`), default `0.0.0.0:3123` (LAN reachable).
 
 ## Publish notes
 

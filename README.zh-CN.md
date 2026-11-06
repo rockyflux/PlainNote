@@ -33,7 +33,7 @@ npm run build
 npm start
 ```
 
-默认监听 <http://127.0.0.1:3123>（数据库 `~/.plainnote/plainnote.db`）。
+默认监听全部网卡（`0.0.0.0:3123`），本机可用 <http://127.0.0.1:3123>，局域网用启动时打印的 `Network` 地址（数据库 `~/.plainnote/plainnote.db`）。
 
 ### 开发模式（热更新）
 
@@ -63,7 +63,7 @@ npm start -- [选项]
 | 参数 | 别名 | 默认值 | 环境变量 | 说明 |
 |---|---|---|---|---|
 | `--port <n>` | `-p` | `3123` | `PORT` | 监听端口（1–65535） |
-| `--host <addr>` | `-H` | `127.0.0.1` | `HOST` | 监听地址；传 `0.0.0.0` 才对外并打印警告 |
+| `--host <addr>` | `-H` | `0.0.0.0` | `HOST` | 监听地址；默认对外（含局域网）并打印警告；仅本机用 `127.0.0.1` |
 | `--db <path>` | `-d` | `~/.plainnote/plainnote.db` | `DB_PATH` | SQLite 文件路径，目录不存在时自动创建 |
 | `--sensitive <path>` | — | 包内词库 | `SENSITIVE_PATH` | 敏感词库（一行一词）；创建/更新标题与正文时拦截 |
 | `--no-update-check` | — | 开启检测 | `PLAINNOTE_NO_UPDATE=1` | 跳过启动时的 npm 新版本检测；有更新时交互终端可输入 `y` 用 `@latest` 重启 |
@@ -132,7 +132,7 @@ npm install --omit=dev
 
 **宝塔：** 网站 → 添加 Node 项目 → 项目目录选解压目录 → 启动选项选 `start`（即 `node dist/cli.js`）→ 端口 `3123`。再给域名做反向代理到 `http://127.0.0.1:3123`。
 
-无面板时直接：`npm start`（或 `node dist/cli.js`），默认监听 `127.0.0.1:3123`。
+无面板时直接：`npm start`（或 `node dist/cli.js`），默认 `0.0.0.0:3123`（局域网可访问）。
 
 ## 发布说明
 
