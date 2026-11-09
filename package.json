@@ -1,6 +1,6 @@
 {
   "name": "plainshare",
-  "version": "0.2.2",
+  "version": "0.2.3",
   "description": "Anonymous Markdown notes with a shareable web view and a curl-friendly raw text link.",
   "license": "MIT",
   "type": "module",
