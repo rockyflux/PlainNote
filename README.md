@@ -62,19 +62,17 @@ node dist/cli.js [options]
 npm start -- [options]
 ```
 
-| Flag / Env | Default | Description |
-|---|---|---|
-| `-p, --port` / `PORT` | `3123` | Listen port |
-| `-H, --host` / `HOST` | `0.0.0.0` | Bind address (`127.0.0.1` for localhost only) |
-| `-d, --db` / `DB_PATH` | `~/.plainnote/plainnote.db` | Local SQLite path (also holds `admin.password`) |
-| `TURSO_DATABASE_URL` | unset | Turso URL; when set, use cloud DB |
-| `TURSO_AUTH_TOKEN` | unset | Turso token (required with the URL) |
-| `--sensitive` / `SENSITIVE_PATH` | packaged | Sensitive-word lexicon path |
-| `--admin-password` / `ADMIN_PASSWORD` | auto | Set admin password |
-| `--show-admin-password` | off | Print existing admin password |
-| `--no-update-check` / `PLAINNOTE_NO_UPDATE=1` | check on | Skip npm update check |
-| `-h, --help` | — | Help |
-| `-V, --version` | — | Version |
+- `-p, --port` / `PORT` — listen port (default `3123`)
+- `-H, --host` / `HOST` — bind address (default `0.0.0.0`; use `127.0.0.1` for localhost only)
+- `-d, --db` / `DB_PATH` — local SQLite path (default `~/.plainnote/plainnote.db`; also holds `admin.password`)
+- `TURSO_DATABASE_URL` — Turso URL; when set, use cloud DB
+- `TURSO_AUTH_TOKEN` — Turso token (required with the URL)
+- `--sensitive` / `SENSITIVE_PATH` — sensitive-word lexicon path (default: packaged)
+- `--admin-password` / `ADMIN_PASSWORD` — set admin password (auto-generated on first start)
+- `--show-admin-password` — print existing admin password
+- `--no-update-check` / `PLAINNOTE_NO_UPDATE=1` — skip npm update check
+- `-h, --help` — help
+- `-V, --version` — version
 
 Precedence: CLI flags > environment variables > defaults.
 

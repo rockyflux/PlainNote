@@ -62,19 +62,17 @@ node dist/cli.js [选项]
 npm start -- [选项]
 ```
 
-| 参数 / 环境变量 | 默认值 | 说明 |
-|---|---|---|
-| `-p, --port` / `PORT` | `3123` | 监听端口 |
-| `-H, --host` / `HOST` | `0.0.0.0` | 监听地址（仅本机用 `127.0.0.1`） |
-| `-d, --db` / `DB_PATH` | `~/.plainnote/plainnote.db` | 本地 SQLite 路径（同目录存 `admin.password`） |
-| `TURSO_DATABASE_URL` | 未设置 | Turso URL；设置后走云端库 |
-| `TURSO_AUTH_TOKEN` | 未设置 | Turso Token（须与 URL 一起配置） |
-| `--sensitive` / `SENSITIVE_PATH` | 包内词库 | 敏感词库路径 |
-| `--admin-password` / `ADMIN_PASSWORD` | 首次自动生成 | 设置管理口令 |
-| `--show-admin-password` | 否 | 启动时打印已有管理口令 |
-| `--no-update-check` / `PLAINNOTE_NO_UPDATE=1` | 开启检测 | 跳过 npm 更新检测 |
-| `-h, --help` | — | 帮助 |
-| `-V, --version` | — | 版本 |
+- `-p, --port` / `PORT` — 监听端口（默认 `3123`）
+- `-H, --host` / `HOST` — 监听地址（默认 `0.0.0.0`；仅本机用 `127.0.0.1`）
+- `-d, --db` / `DB_PATH` — 本地 SQLite 路径（默认 `~/.plainnote/plainnote.db`；同目录存 `admin.password`）
+- `TURSO_DATABASE_URL` — Turso URL；设置后走云端库
+- `TURSO_AUTH_TOKEN` — Turso Token（须与 URL 一起配置）
+- `--sensitive` / `SENSITIVE_PATH` — 敏感词库路径（默认包内词库）
+- `--admin-password` / `ADMIN_PASSWORD` — 设置管理口令（首次自动生成）
+- `--show-admin-password` — 启动时打印已有管理口令
+- `--no-update-check` / `PLAINNOTE_NO_UPDATE=1` — 跳过 npm 更新检测
+- `-h, --help` — 帮助
+- `-V, --version` — 版本
 
 参数优先级：命令行参数 > 环境变量 > 默认值。
 
