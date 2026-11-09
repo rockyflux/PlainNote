@@ -62,40 +62,40 @@ node dist/cli.js [options]
 npm start -- [options]
 ```
 
-| Flag | Alias | Default | Env | Description |
-|---|---|---|---|---|
-| `--port <n>` | `-p` | `3123` | `PORT` | Listen port (1–65535) |
-| `--host <addr>` | `-H` | `0.0.0.0` | `HOST` | Bind address; default is public (LAN) with a warning; use `127.0.0.1` for localhost only |
-| `--db <path>` | `-d` | `~/.plainnote/plainnote.db` | `DB_PATH` | Local SQLite path when Turso is not configured; directory is created if missing. Admin password file is stored next to it |
-| — | — | — | `TURSO_DATABASE_URL` | Turso / libSQL URL; when set, cloud DB is preferred over local SQLite |
-| — | — | — | `TURSO_AUTH_TOKEN` | Turso auth token (required with the URL; do not commit) |
-| `--sensitive <path>` | — | packaged lexicon | `SENSITIVE_PATH` | Sensitive-word list (one term per line); blocks create/update on title/content |
-| `--admin-password <pwd>` | — | generated on first start | `ADMIN_PASSWORD` | Set admin password and write it to `admin.password` next to the DB |
-| `--show-admin-password` | — | no | — | Print the existing admin password on startup (printed by default only when first generated) |
-| `--no-update-check` | — | check enabled | `PLAINNOTE_NO_UPDATE=1` | Skip npm update check on startup |
-| `--help` | `-h` | — | — | Print help and exit |
-| `--version` | `-V` | — | — | Print version and exit |
+| Flag / Env | Default | Description |
+|---|---|---|
+| `-p, --port` / `PORT` | `3123` | Listen port |
+| `-H, --host` / `HOST` | `0.0.0.0` | Bind address (`127.0.0.1` for localhost only) |
+| `-d, --db` / `DB_PATH` | `~/.plainnote/plainnote.db` | Local SQLite path (also holds `admin.password`) |
+| `TURSO_DATABASE_URL` | unset | Turso URL; when set, use cloud DB |
+| `TURSO_AUTH_TOKEN` | unset | Turso token (required with the URL) |
+| `--sensitive` / `SENSITIVE_PATH` | packaged | Sensitive-word lexicon path |
+| `--admin-password` / `ADMIN_PASSWORD` | auto | Set admin password |
+| `--show-admin-password` | off | Print existing admin password |
+| `--no-update-check` / `PLAINNOTE_NO_UPDATE=1` | check on | Skip npm update check |
+| `-h, --help` | — | Help |
+| `-V, --version` | — | Version |
 
 Precedence: CLI flags > environment variables > defaults.
 
 ## HTTP API (summary)
 
-Full curl examples live in the running app at `/docs` (EN) or `/zh/docs` (ZH).
+Full curl examples: `/docs` (EN) or `/zh/docs` (ZH).
 
 | Method | Path | Description |
 |---|---|---|
-| `POST` | `/api/notes` | Create; `content` required; optional `title`, `format` (`text` \| `markdown`), `timezone`, `language` |
-| `GET` | `/api/notes/by-secret/:secret` | Full note + three URLs (edit credential required) |
-| `GET` | `/api/notes/:id` | Public note (no secret) |
-| `PATCH` | `/api/notes/:secret` | Update title / content / format / custom `id` |
-| `DELETE` | `/api/notes/:secret` | Delete |
+| `POST` | `/api/notes` | Create note |
+| `GET` | `/api/notes/by-secret/:secret` | Full note + three URLs |
+| `GET` | `/api/notes/:id` | Public note |
+| `PATCH` | `/api/notes/:secret` | Update note |
+| `DELETE` | `/api/notes/:secret` | Delete note |
 | `GET` | `/raw/:id` | Plaintext body |
-| `POST` | `/api/admin/login` | Verify admin password |
-| `GET` | `/api/admin/notes` | Paginated list only (`Authorization: Bearer <password>`) |
+| `POST` | `/api/admin/login` | Admin login |
+| `GET` | `/api/admin/notes` | Admin note list |
 
-**Admin UI:** open `/admin`. The admin password unlocks the note list; view / update / delete still use `/api/notes/:secret` with each note's secret. On first start the server writes `admin.password` next to the DB and prints the password.
+**Admin UI:** `/admin` — password unlocks the list; view/edit/delete still use each note's `secret`. First start writes `admin.password` next to the DB.
 
-**Limits (server):** content ≤ 30 000 code points; title ≤ 200; create rate ≈ 10/min and 100/day per IP; title/content matching the sensitive lexicon returns 422.
+**Limits:** content ≤ 30000 chars; title ≤ 200; ≈10 creates/min and 100/day per IP; sensitive words → 422.
 
 ## Layout
 

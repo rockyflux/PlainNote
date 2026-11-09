@@ -62,40 +62,40 @@ node dist/cli.js [选项]
 npm start -- [选项]
 ```
 
-| 参数 | 别名 | 默认值 | 环境变量 | 说明 |
-|---|---|---|---|---|
-| `--port <n>` | `-p` | `3123` | `PORT` | 监听端口（1–65535） |
-| `--host <addr>` | `-H` | `0.0.0.0` | `HOST` | 监听地址；默认对外（含局域网）并打印警告；仅本机用 `127.0.0.1` |
-| `--db <path>` | `-d` | `~/.plainnote/plainnote.db` | `DB_PATH` | 本地 SQLite 路径（未配置 Turso 时使用）；目录不存在时自动创建。管理口令文件也写在同目录 |
-| — | — | — | `TURSO_DATABASE_URL` | Turso / libSQL 数据库 URL；设置后优先走云端库，忽略本地 SQLite 写入 |
-| — | — | — | `TURSO_AUTH_TOKEN` | Turso 鉴权 Token（与 URL 成对使用；勿提交到 Git） |
-| `--sensitive <path>` | — | 包内词库 | `SENSITIVE_PATH` | 敏感词库（一行一词）；创建/更新标题与正文时拦截 |
-| `--admin-password <pwd>` | — | 首次自动生成 | `ADMIN_PASSWORD` | 设置管理后台口令，写入数据库同目录的 `admin.password` |
-| `--show-admin-password` | — | 否 | — | 启动时打印已有管理口令（默认仅首次生成时打印） |
-| `--no-update-check` | — | 开启检测 | `PLAINNOTE_NO_UPDATE=1` | 跳过启动时的 npm 新版本检测；有更新时交互终端可输入 `y` 用 `@latest` 重启 |
-| `--help` | `-h` | — | — | 打印帮助并退出 |
-| `--version` | `-V` | — | — | 打印版本号并退出 |
+| 参数 / 环境变量 | 默认值 | 说明 |
+|---|---|---|
+| `-p, --port` / `PORT` | `3123` | 监听端口 |
+| `-H, --host` / `HOST` | `0.0.0.0` | 监听地址（仅本机用 `127.0.0.1`） |
+| `-d, --db` / `DB_PATH` | `~/.plainnote/plainnote.db` | 本地 SQLite 路径（同目录存 `admin.password`） |
+| `TURSO_DATABASE_URL` | 未设置 | Turso URL；设置后走云端库 |
+| `TURSO_AUTH_TOKEN` | 未设置 | Turso Token（须与 URL 一起配置） |
+| `--sensitive` / `SENSITIVE_PATH` | 包内词库 | 敏感词库路径 |
+| `--admin-password` / `ADMIN_PASSWORD` | 首次自动生成 | 设置管理口令 |
+| `--show-admin-password` | 否 | 启动时打印已有管理口令 |
+| `--no-update-check` / `PLAINNOTE_NO_UPDATE=1` | 开启检测 | 跳过 npm 更新检测 |
+| `-h, --help` | — | 帮助 |
+| `-V, --version` | — | 版本 |
 
 参数优先级：命令行参数 > 环境变量 > 默认值。
 
 ## HTTP API（摘要）
 
-完整 curl 示例见运行中的应用：`/zh/docs`（中文）或 `/docs`（英文）。
+完整 curl 示例见：`/zh/docs`（中文）或 `/docs`（英文）。
 
 | 方法 | 路径 | 说明 |
 |---|---|---|
-| `POST` | `/api/notes` | 创建；`content` 必填，可选 `title`、`format`（`text` \| `markdown`）、`timezone`、`language` |
-| `GET` | `/api/notes/by-secret/:secret` | 完整笔记 + 三条 URL（需编辑凭证） |
-| `GET` | `/api/notes/:id` | 公开笔记（不含 secret） |
-| `PATCH` | `/api/notes/:secret` | 更新标题 / 正文 / 格式 / 自定义 `id` |
-| `DELETE` | `/api/notes/:secret` | 删除 |
+| `POST` | `/api/notes` | 创建笔记 |
+| `GET` | `/api/notes/by-secret/:secret` | 完整笔记 + 三条 URL |
+| `GET` | `/api/notes/:id` | 公开笔记 |
+| `PATCH` | `/api/notes/:secret` | 更新笔记 |
+| `DELETE` | `/api/notes/:secret` | 删除笔记 |
 | `GET` | `/raw/:id` | 纯文本正文 |
-| `POST` | `/api/admin/login` | 校验管理口令 |
-| `GET` | `/api/admin/notes` | 仅分页列表（需 `Authorization: Bearer <口令>`） |
+| `POST` | `/api/admin/login` | 管理登录 |
+| `GET` | `/api/admin/notes` | 管理端列表 |
 
-**管理后台：** 打开 `/admin`。管理口令只用于解锁笔记列表；查看 / 修改 / 删除仍走原有 `/api/notes/:secret`（凭笔记 secret）。首次启动会在数据库同目录生成 `admin.password` 并打印口令。
+**管理后台：** `/admin` — 口令只解锁列表；查看/修改/删除仍凭笔记 `secret`。首次启动会在数据库同目录生成 `admin.password`。
 
-**服务端限制：** 正文 ≤ 30 000 码点；标题 ≤ 200；同 IP 创建约 10 次/分钟、100 次/自然日；标题/正文命中敏感词库时返回 422。
+**服务端限制：** 正文 ≤ 30000；标题 ≤ 200；同 IP 约 10 次/分钟、100 次/天；命中敏感词返回 422。
 
 ## 工程目录
 
