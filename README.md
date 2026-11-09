@@ -9,6 +9,7 @@ Anonymous, login-free Markdown notes that `curl`, scripts, and LLMs can consume 
 - Minimal notepad UX plus programmable Raw access; **in-browser Markdown rendering** (allowlist-sanitized) is part of this product.
 - Stack: **Node.js ≥ 18 · Fastify · better-sqlite3 / Turso (libSQL) · Vite (vanilla TypeScript, no frontend framework)**
 - Default: zero external services (local SQLite). Optionally set `TURSO_DATABASE_URL` + `TURSO_AUTH_TOKEN` for [Turso](https://turso.tech/pricing) cloud persistence. UI is **zh / en** with API docs at `/docs` and `/zh/docs`
+- **Deploy on [Vercel](https://vercel.com):** fork this repo → import your fork → set Turso env vars. Full guide: [docs/vercel.md](docs/vercel.md)
 
 ## Three-link model
 
@@ -155,16 +156,16 @@ npm start
 
 ### Deploy on Vercel (static frontend + serverless API)
 
-Use this when you do not want a long-running Node process. Turso is required; no local files.
+You can host PlainNote on Vercel without a long-running Node process. **Turso is required**; no local SQLite / password files.
 
-**Full guide (fork, env, public access, troubleshooting): [docs/vercel.md](docs/vercel.md).**
+**→ Full guide: [docs/vercel.md](docs/vercel.md)** (fork, env vars, public access, troubleshooting)
 
-Summary:
+Quick path:
 
-1. **Fork this repo** → in [Vercel](https://vercel.com/new) import **your fork** (usually no code changes).
-2. Set your own `TURSO_DATABASE_URL`, `TURSO_AUTH_TOKEN` (optional `ADMIN_PASSWORD`).
-3. **Disable Vercel Authentication** under Deployment Protection, or visitors hit a login wall.
-4. Build outputs `dist/static`; `/api/*` and `/raw/*` go to serverless Fastify.
+1. **Fork** this repo → [Vercel New Project](https://vercel.com/new) → import **your fork** (usually no code changes).
+2. Set `TURSO_DATABASE_URL`, `TURSO_AUTH_TOKEN` (optional `ADMIN_PASSWORD`).
+3. **Disable Vercel Authentication** under Deployment Protection if the site should be public.
+4. Deploy: static from `dist/static`; `/api/*` and `/raw/*` hit serverless Fastify.
 
 Local CLI / VPS long-running deploy is unchanged.
 

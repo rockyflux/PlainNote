@@ -9,6 +9,7 @@
 - 极简记事本体验 + 可编程 Raw 访问；**网页 Markdown 渲染阅读**（白名单清洗）为本产品能力。
 - 技术栈：**Node.js ≥ 18 · Fastify · better-sqlite3 / Turso(libSQL) · Vite（原生 TypeScript，无前端框架）**
 - 默认零外部服务依赖（本地 SQLite）；也可通过 `TURSO_DATABASE_URL` + `TURSO_AUTH_TOKEN` 使用 [Turso](https://turso.tech/pricing) 云端持久化。界面 **中 / 英** 双语，内置 API 文档页 `/zh/docs`、`/docs`
+- **可部署到 [Vercel](https://vercel.com)：** Fork 本仓库 → 导入你的 Fork → 配置 Turso 环境变量。完整说明：[docs/vercel.zh-CN.md](docs/vercel.zh-CN.md)
 
 ## 三链接模型
 
@@ -155,16 +156,16 @@ npm start
 
 ### 部署到 Vercel（静态前端 + Serverless API）
 
-适合不想自备 Node 常驻进程的场景。数据库必须用 Turso；不写本地文件。
+PlainNote **可以部署到 Vercel**，无需自备常驻 Node 进程。**必须使用 Turso**；不写本地 SQLite / 口令文件。
 
-**完整步骤（Fork、环境变量、公开访问、排错）：见 [docs/vercel.zh-CN.md](docs/vercel.zh-CN.md)。**
+**→ 完整部署文档：[docs/vercel.zh-CN.md](docs/vercel.zh-CN.md)**（Fork、环境变量、公开访问、排错）
 
-摘要：
+快速路径：
 
-1. **Fork 本仓库** → 在 [Vercel](https://vercel.com/new) 选择**你的 Fork**（一般不用改代码）。
-2. 配置你自己的 `TURSO_DATABASE_URL`、`TURSO_AUTH_TOKEN`（可选 `ADMIN_PASSWORD`）。
-3. **关闭 Deployment Protection 里的 Vercel Authentication**，否则访客会进登录墙。
-4. 构建产出 `dist/static`；`/api/*`、`/raw/*` 走 Serverless Fastify。
+1. **Fork** 本仓库 → [Vercel New Project](https://vercel.com/new) → 导入**你的 Fork**（一般不用改代码）。
+2. 配置 `TURSO_DATABASE_URL`、`TURSO_AUTH_TOKEN`（可选 `ADMIN_PASSWORD`）。
+3. 若需完全公开：在 Deployment Protection 中**关闭 Vercel Authentication**。
+4. 部署后：静态资源来自 `dist/static`；`/api/*`、`/raw/*` 走 Serverless Fastify。
 
 本地 CLI / 宝塔等长驻部署方式不变。
 
