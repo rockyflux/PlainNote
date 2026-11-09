@@ -4,6 +4,7 @@ import {
   clearAdminPassword,
   getStoredAdminPassword,
   type AdminNoteListItem,
+  type AdminPurgeKeep,
 } from '../lib/admin-api';
 import { copyText, formatTime, toast } from '../lib/dom';
 import { openModal } from '../lib/modal';
@@ -26,6 +27,19 @@ type Copy = {
   searchBtn: string;
   refresh: string;
   batchDelete: string;
+  purgeLabel: string;
+  purgeAll: string;
+  purgeKeep7d: string;
+  purgeKeep30d: string;
+  purgeKeep90d: string;
+  purgeKeep180d: string;
+  purgeKeep365d: string;
+  purgeBtn: string;
+  purgeConfirmTitle: string;
+  purgeConfirmBody: (keep: AdminPurgeKeep) => string;
+  purgeConfirmBtn: string;
+  purging: string;
+  purged: (n: number) => string;
   selected: (n: number) => string;
   empty: string;
   colTitle: string;
@@ -69,6 +83,22 @@ const ZH: Copy = {
   searchBtn: '搜索',
   refresh: '刷新',
   batchDelete: '批量删除',
+  purgeLabel: '清理',
+  purgeAll: '一键清空全部',
+  purgeKeep7d: '保留最近一周',
+  purgeKeep30d: '保留最近一个月',
+  purgeKeep90d: '保留最近三个月',
+  purgeKeep180d: '保留最近半年',
+  purgeKeep365d: '保留最近一年',
+  purgeBtn: '执行清理',
+  purgeConfirmTitle: '确认清理',
+  purgeConfirmBody: (keep) =>
+    keep === 'all'
+      ? '将永久删除全部笔记，此操作不可恢复。'
+      : `将永久删除超出所选时间范围的笔记（按更新时间），保留最近记录。此操作不可恢复。`,
+  purgeConfirmBtn: '确认清理',
+  purging: '清理中…',
+  purged: (n) => `已清理 ${n} 条`,
   selected: (n) => `已选 ${n} 条`,
   empty: '暂无笔记',
   colTitle: '标题',
@@ -113,6 +143,22 @@ const EN: Copy = {
   searchBtn: 'Search',
   refresh: 'Refresh',
   batchDelete: 'Delete selected',
+  purgeLabel: 'Purge',
+  purgeAll: 'Clear all notes',
+  purgeKeep7d: 'Keep last week',
+  purgeKeep30d: 'Keep last month',
+  purgeKeep90d: 'Keep last 3 months',
+  purgeKeep180d: 'Keep last 6 months',
+  purgeKeep365d: 'Keep last year',
+  purgeBtn: 'Run purge',
+  purgeConfirmTitle: 'Confirm purge',
+  purgeConfirmBody: (keep) =>
+    keep === 'all'
+      ? 'Permanently delete every note. This cannot be undone.'
+      : 'Permanently delete notes older than the selected window (by update time). This cannot be undone.',
+  purgeConfirmBtn: 'Purge',
+  purging: 'Purging…',
+  purged: (n) => `Purged ${n}`,
   selected: (n) => `${n} selected`,
   empty: 'No notes yet',
   colTitle: 'Title',
@@ -145,6 +191,30 @@ const EN: Copy = {
 
 function copy(): Copy {
   return getLang() === 'en' ? EN : ZH;
+}
+
+const PURGE_OPTIONS: AdminPurgeKeep[] = ['30d', '7d', '90d', '180d', '365d', 'all'];
+const DEFAULT_PURGE_KEEP: AdminPurgeKeep = '30d';
+
+function purgeOptionLabel(c: Copy, keep: AdminPurgeKeep): string {
+  switch (keep) {
+    case 'all':
+      return c.purgeAll;
+    case '7d':
+      return c.purgeKeep7d;
+    case '30d':
+      return c.purgeKeep30d;
+    case '90d':
+      return c.purgeKeep90d;
+    case '180d':
+      return c.purgeKeep180d;
+    case '365d':
+      return c.purgeKeep365d;
+  }
+}
+
+function parsePurgeKeep(raw: string): AdminPurgeKeep | null {
+  return (PURGE_OPTIONS as string[]).includes(raw) ? (raw as AdminPurgeKeep) : null;
 }
 
 function escapeHtml(text: string): string {
@@ -285,6 +355,9 @@ async function renderDashboard(root: HTMLElement, password: string, init?: Parti
     onDelete: (secrets) => {
       confirmDelete(root, state, secrets);
     },
+    onPurge: (keep) => {
+      confirmPurge(root, state, keep);
+    },
   });
 
   paint();
@@ -325,10 +398,15 @@ function paintDashboard(
     onToggleAll: (checked: boolean) => void;
     onView: (secret: string) => void;
     onDelete: (secrets: string[]) => void;
+    onPurge: (keep: AdminPurgeKeep) => void;
   },
 ): void {
   const c = copy();
   const totalPages = Math.max(1, Math.ceil(state.total / PAGE_SIZE));
+  const purgeOptions = PURGE_OPTIONS.map(
+    (keep) =>
+      `<option value="${keep}"${keep === DEFAULT_PURGE_KEEP ? ' selected' : ''}>${escapeHtml(purgeOptionLabel(c, keep))}</option>`,
+  ).join('');
   const rows = state.items
     .map((item) => {
       const title = item.title?.trim() || c.untitled;
@@ -376,6 +454,13 @@ function paintDashboard(
           </form>
           <div class="admin-filter-actions">
             <button type="button" class="btn-ghost" id="admin-refresh">${escapeHtml(c.refresh)}</button>
+            <label class="admin-purge">
+              <span class="admin-purge-label">${escapeHtml(c.purgeLabel)}</span>
+              <select id="admin-purge-keep" aria-label="${escapeHtml(c.purgeLabel)}">
+                ${purgeOptions}
+              </select>
+              <button type="button" class="btn-danger" id="admin-purge">${escapeHtml(c.purgeBtn)}</button>
+            </label>
             <span class="admin-selected" id="admin-selected">${escapeHtml(c.selected(state.selected.size))}</span>
             <button type="button" class="btn-danger" id="admin-batch-del" ${state.selected.size === 0 ? 'disabled' : ''}>
               ${escapeHtml(c.batchDelete)}
@@ -443,6 +528,12 @@ function paintDashboard(
     handlers.onDelete([...state.selected]);
   });
 
+  root.querySelector('#admin-purge')?.addEventListener('click', () => {
+    const raw = root.querySelector<HTMLSelectElement>('#admin-purge-keep')?.value ?? '';
+    const keep = parsePurgeKeep(raw);
+    if (keep) handlers.onPurge(keep);
+  });
+
   root.querySelectorAll<HTMLTableRowElement>('tr[data-secret]').forEach((tr) => {
     const secret = tr.dataset.secret!;
     tr.querySelector('.admin-row-check')?.addEventListener('change', (e) => {
@@ -501,6 +592,46 @@ function confirmDelete(root: HTMLElement, state: DashState, secrets: string[]): 
     } catch (err) {
       okBtn.disabled = false;
       okBtn.textContent = c.deleteConfirmBtn;
+      toast(err instanceof ApiError ? err.message : c.loadFailed);
+    }
+  });
+}
+
+function confirmPurge(root: HTMLElement, state: DashState, keep: AdminPurgeKeep): void {
+  const c = copy();
+  const modal = openModal({
+    title: c.purgeConfirmTitle,
+    bodyHtml: `
+      <p>${escapeHtml(c.purgeConfirmBody(keep))}</p>
+      <p class="admin-purge-summary">${escapeHtml(purgeOptionLabel(c, keep))}</p>
+    `,
+    actionsHtml: `
+      <button type="button" class="btn-ghost" data-act="cancel">${escapeHtml(t().cancel)}</button>
+      <button type="button" class="btn-danger" data-act="ok">${escapeHtml(c.purgeConfirmBtn)}</button>
+    `,
+    closeLabel: t().close,
+  });
+
+  modal.dialog.querySelector('[data-act="cancel"]')?.addEventListener('click', () => modal.close());
+  modal.dialog.querySelector('[data-act="ok"]')?.addEventListener('click', async () => {
+    const okBtn = modal.dialog.querySelector<HTMLButtonElement>('[data-act="ok"]')!;
+    okBtn.disabled = true;
+    okBtn.textContent = c.purging;
+    try {
+      const result = await adminApi.purge(state.password, keep);
+      modal.close();
+      toast(c.purged(result.deleted));
+      await renderDashboard(root, state.password, { page: 1, q: state.q });
+    } catch (err) {
+      if (err instanceof ApiError && err.status === 401) {
+        modal.close();
+        clearAdminPassword();
+        toast(c.unauthorized);
+        renderLogin(root);
+        return;
+      }
+      okBtn.disabled = false;
+      okBtn.textContent = c.purgeConfirmBtn;
       toast(err instanceof ApiError ? err.message : c.loadFailed);
     }
   });

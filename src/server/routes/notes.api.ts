@@ -17,7 +17,7 @@ export function registerNoteApiRoutes(app: FastifyInstance, service: NoteService
     if (typeof body !== 'object' || body === null) {
       throw new AppError(400, ErrorCode.BAD_REQUEST, '请求体必须是 JSON 对象');
     }
-    const created = service.create(
+    const created = await service.create(
       resolveOrigin(request),
       body as Record<string, unknown>,
       {
@@ -30,13 +30,13 @@ export function registerNoteApiRoutes(app: FastifyInstance, service: NoteService
 
   app.get('/api/notes/by-secret/:secret', async (request, reply) => {
     const { secret } = request.params as { secret: string };
-    const note = service.getFullBySecret(resolveOrigin(request), secret);
+    const note = await service.getFullBySecret(resolveOrigin(request), secret);
     reply.send(note);
   });
 
   app.get('/api/notes/:id', async (request, reply) => {
     const { id } = request.params as { id: string };
-    reply.send(service.getPublic(id));
+    reply.send(await service.getPublic(id));
   });
 
   app.patch('/api/notes/:secret', async (request, reply) => {
@@ -50,7 +50,7 @@ export function registerNoteApiRoutes(app: FastifyInstance, service: NoteService
     if (typeof body !== 'object' || body === null) {
       throw new AppError(400, ErrorCode.BAD_REQUEST, '请求体必须是 JSON 对象');
     }
-    const updated = service.update(
+    const updated = await service.update(
       resolveOrigin(request),
       secret,
       body as Record<string, unknown>,
@@ -60,7 +60,7 @@ export function registerNoteApiRoutes(app: FastifyInstance, service: NoteService
 
   app.delete('/api/notes/:secret', async (request, reply) => {
     const { secret } = request.params as { secret: string };
-    service.remove(secret);
+    await service.remove(secret);
     reply.send({ ok: true });
   });
 }

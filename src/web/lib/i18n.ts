@@ -599,8 +599,8 @@ function detectLang(): Lang {
   } catch {
     // ignore
   }
-  const nav = typeof navigator !== 'undefined' ? navigator.language : '';
-  return nav.toLowerCase().startsWith('zh') ? 'zh' : 'en';
+  // Default to English; Chinese requires an explicit language switch.
+  return 'en';
 }
 
 let currentLang: Lang = detectLang();

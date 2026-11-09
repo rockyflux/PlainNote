@@ -1,5 +1,6 @@
 import Fastify, { type FastifyInstance } from 'fastify';
-import { SqliteNoteRepository } from './store/sqlite.js';
+import { createNoteRepository } from './store/create.js';
+import type { NoteRepository } from './store/types.js';
 import { NoteService } from './services/note.service.js';
 import {
   SensitiveFilter,
@@ -19,14 +20,21 @@ export interface ServerOptions {
   sensitivePath?: string;
   /** 管理后台口令；未提供则不注册管理 API。 */
   adminPassword?: string;
+  /** Turso / libSQL URL；也可用环境变量 TURSO_DATABASE_URL。 */
+  tursoUrl?: string;
+  /** Turso auth token；也可用环境变量 TURSO_AUTH_TOKEN。 */
+  tursoAuthToken?: string;
 }
 
 export interface PlainNoteServer {
   app: FastifyInstance;
+  /** Safe store label for startup logs (path or Turso URL). */
+  storeLabel: string;
+  storeKind: 'sqlite' | 'turso';
   close(): Promise<void>;
 }
 
-export function createServer(options: ServerOptions): PlainNoteServer {
+export async function createServer(options: ServerOptions): Promise<PlainNoteServer> {
   const app = Fastify({
     logger: {
       level: 'info',
@@ -43,7 +51,11 @@ export function createServer(options: ServerOptions): PlainNoteServer {
   const sensitive = SensitiveFilter.loadFromFile(sensitivePath);
   app.log.info(`sensitive lexicon loaded: ${sensitive.size} terms from ${sensitivePath}`);
 
-  const repository = new SqliteNoteRepository(options.dbPath);
+  const { repository, label, kind } = await createNoteRepository({
+    dbPath: options.dbPath,
+    tursoUrl: options.tursoUrl,
+    tursoAuthToken: options.tursoAuthToken,
+  });
   const service = new NoteService(
     repository,
     {
@@ -63,9 +75,13 @@ export function createServer(options: ServerOptions): PlainNoteServer {
 
   return {
     app,
+    storeLabel: label,
+    storeKind: kind,
     async close() {
       await app.close();
-      repository.close();
+      await repository.close();
     },
   };
 }
+
+export type { NoteRepository };

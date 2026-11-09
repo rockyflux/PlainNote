@@ -1,6 +1,6 @@
 {
   "name": "plainshare",
-  "version": "0.1.9",
+  "version": "0.2.0",
   "description": "Anonymous Markdown notes with a shareable web view and a curl-friendly raw text link.",
   "license": "MIT",
   "type": "module",
@@ -28,6 +28,7 @@
   },
   "dependencies": {
     "@fastify/static": "^7.0.4",
+    "@libsql/client": "^0.18.0",
     "better-sqlite3": "^11.10.0",
     "commander": "^12.1.0",
     "dompurify": "^3.1.7",

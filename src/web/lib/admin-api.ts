@@ -21,6 +21,14 @@ export interface AdminNoteListResult {
   pageSize: number;
 }
 
+/** 与服务端 AdminPurgeKeep 对齐。 */
+export type AdminPurgeKeep = 'all' | '7d' | '30d' | '90d' | '180d' | '365d';
+
+export interface AdminPurgeResult {
+  deleted: number;
+  keep: AdminPurgeKeep;
+}
+
 interface ErrorEnvelope {
   error: { code: string; message: string; fields?: Record<string, string> };
 }
@@ -68,7 +76,7 @@ async function adminRequest<T>(
   return body as T;
 }
 
-/** 管理口令仅用于登录与列表；改删仍用公开 note secret API。 */
+/** 管理口令用于登录、列表与批量清理；单条改删仍用公开 note secret API。 */
 export const adminApi = {
   async login(password: string): Promise<void> {
     await adminRequest<{ ok: boolean }>('/api/admin/login', password, {
@@ -88,5 +96,12 @@ export const adminApi = {
     });
     if (opts.q?.trim()) params.set('q', opts.q.trim());
     return adminRequest(`/api/admin/notes?${params}`, password);
+  },
+
+  purge(password: string, keep: AdminPurgeKeep): Promise<AdminPurgeResult> {
+    return adminRequest('/api/admin/notes/purge', password, {
+      method: 'POST',
+      body: JSON.stringify({ keep }),
+    });
   },
 };

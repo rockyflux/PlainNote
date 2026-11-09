@@ -12,7 +12,7 @@ export function registerRawRoute(app: FastifyInstance, service: NoteService): vo
       .header('Cache-Control', 'no-store');
 
     try {
-      const { content } = service.getRawContent(id);
+      const { content } = await service.getRawContent(id);
       reply.header('Content-Type', 'text/plain; charset=utf-8').send(content);
     } catch (err) {
       if (err instanceof AppError && err.status === 404) {

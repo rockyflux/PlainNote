@@ -1,12 +1,14 @@
 # PlainNote
 
-**English** | [中文](README.zh-CN.md)
+**English** | [中文](https://github.com/rockyflux/PlainNote/blob/master/README.zh-CN.md)
+
+**Repository:** https://github.com/rockyflux/plainnote
 
 Anonymous, login-free Markdown notes that `curl`, scripts, and LLMs can consume directly. Write once, get **a private edit link, a read-only web link, and a Raw plaintext link**.
 
 - Minimal notepad UX plus programmable Raw access; **in-browser Markdown rendering** (allowlist-sanitized) is part of this product.
-- Stack: **Node.js ≥ 18 · Fastify · better-sqlite3 · Vite (vanilla TypeScript, no frontend framework)**
-- Zero external services: one local SQLite file; UI is **zh / en** with API docs at `/docs` and `/zh/docs`
+- Stack: **Node.js ≥ 18 · Fastify · better-sqlite3 / Turso (libSQL) · Vite (vanilla TypeScript, no frontend framework)**
+- Default: zero external services (local SQLite). Optionally set `TURSO_DATABASE_URL` + `TURSO_AUTH_TOKEN` for [Turso](https://turso.tech/pricing) cloud persistence. UI is **zh / en** with API docs at `/docs` and `/zh/docs`
 
 ## Three-link model
 
@@ -60,40 +62,8 @@ node dist/cli.js [options]
 npm start -- [options]
 ```
 
-| Flag | Alias | Default | Env | Description |
-|---|---|---|---|---|
-| `--port <n>` | `-p` | `3123` | `PORT` | Listen port (1–65535) |
-| `--host <addr>` | `-H` | `0.0.0.0` | `HOST` | Bind address; default exposes LAN (prints a warning); use `127.0.0.1` for localhost only |
-| `--db <path>` | `-d` | `~/.plainnote/plainnote.db` | `DB_PATH` | SQLite path; parent dirs are created if missing |
-| `--sensitive <path>` | — | bundled lexicon | `SENSITIVE_PATH` | Sensitive-word list (one term per line); blocks create/update on title & content |
-| `--admin-password <pwd>` | — | auto-generated once | `ADMIN_PASSWORD` | Set admin password; written to `admin.password` next to the DB |
-| `--show-admin-password` | — | off | — | Print the existing admin password on startup (only printed by default when first generated) |
-| `--no-update-check` | — | check on | `PLAINNOTE_NO_UPDATE=1` | Skip npm update check on startup; if newer, interactive TTYs can press `y` to relaunch via `@latest` |
-| `--help` | `-h` | — | — | Print help and exit |
-| `--version` | `-V` | — | — | Print version and exit |
-
-Precedence: CLI flags > environment variables > defaults.
-
-## HTTP API (summary)
-
-Full curl examples live in the running app at `/docs` (EN) or `/zh/docs` (ZH).
-
-| Method | Path | Notes |
-|---|---|---|
-| `POST` | `/api/notes` | Create; body: `content` (required), optional `title`, `format` (`text` \| `markdown`), `timezone`, `language` |
-| `GET` | `/api/notes/by-secret/:secret` | Full note + URLs (edit credential) |
-| `GET` | `/api/notes/:id` | Public note (no secret) |
-| `PATCH` | `/api/notes/:secret` | Update title / content / format / custom `id` |
-| `DELETE` | `/api/notes/:secret` | Delete |
-| `GET` | `/raw/:id` | Plaintext body |
-| `POST` | `/api/admin/login` | Verify admin password |
-| `GET` | `/api/admin/notes` | Paginated list only (`Authorization: Bearer <password>`) |
-
-**Admin UI:** open `/admin`. The admin password unlocks the note list; view / update / delete still use the existing `/api/notes/:secret` APIs with each note's secret. On first start the server writes `admin.password` next to the DB and prints the password.
-
-**Limits (server):** content ≤ 30 000 code points; title ≤ 200; create rate ≈ 10/min and 100/day per IP; title/content matching the sensitive lexicon returns 422.
-
-## Layout
+| Flag | Alias | Precedence: CLI flags > environment variables > defaults.HTTP API (summary)Full curl examples live in the running app at `/docs` (EN) or `/zh/docs` (ZH).**Admin UI:** open `/admin`. The admin password unlocks the note list; view / update / delete still use the existing `/api/notes/:secret` APIs with each note's secret. On first start the server writes `admin.password` next to the DB and prints the password.**Limits (server):** content ≤ 30 000 code points; title ≤ 200; create rate ≈ 10/min and 100/day per IP; title/content matching the sensitive lexicon returns 422.布局 |
+| ---- | ----- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
 
 ```
 plainnote/
@@ -107,7 +77,7 @@ plainnote/
 │   │   ├── routes/             # JSON API, Raw, static + history fallback
 │   │   ├── services/           # Validation, sensitive filter, id/secret, DTOs & URLs
 │   │   ├── data/               # sensitive.txt lexicon (copied into dist on build)
-│   │   └── store/              # Repository + better-sqlite3
+│   │   └── store/              # Repository (SQLite / Turso)
 │   └── web/                    # Vite frontend → dist/static
 │       ├── main.ts             # History router
 │       ├── pages/              # Home / Edit / Note / Api (docs)
@@ -122,7 +92,31 @@ plainnote/
 
 ## Deploy
 
-Build and pack locally:
+### Turso (recommended free cloud DB)
+
+1. Create a DB and token on [Turso](https://turso.tech/pricing). Free plan roughly: 100 DBs / 5GB storage / 500M rows read & 10M written per month / 3GB sync (see official pricing).
+2. Copy `.env.example` to `.env` (or set platform env vars):
+
+```bash
+TURSO_DATABASE_URL=libsql://your-db.turso.io
+TURSO_AUTH_TOKEN=your-token
+```
+
+3. Start (schema is created automatically):
+
+```bash
+npm ci
+npm run build
+npm start
+```
+
+**Storage selection (simple):**
+
+- Both `TURSO_DATABASE_URL` and `TURSO_AUTH_TOKEN` set → Turso  
+- No `TURSO_DATABASE_URL` → local SQLite  
+- URL set but token missing → startup fails (no silent fallback)
+
+### Pack and upload
 
 ```bash
 npm ci
@@ -136,7 +130,7 @@ Upload the `.tgz`, extract it into the server directory, then install deps:
 npm install --omit=dev
 ```
 
-**BT Panel:** Website → Add Node project → pick the extract directory → start option `start` (`node dist/cli.js`) → port `3123`. Point the domain reverse proxy to `http://127.0.0.1:3123`.
+**BT Panel:** Website → Add Node project → pick the extract directory → start option `start` (`node dist/cli.js`) → port `3123`. Point the domain reverse proxy to `http://127.0.0.1:3123`. For Turso, add the two env vars in the panel.
 
 Without a panel: `npm start` (or `node dist/cli.js`), default `0.0.0.0:3123` (LAN reachable).
 

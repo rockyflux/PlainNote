@@ -37,6 +37,8 @@ interface Stmt {
   findBySecret: Database.Statement<[string], NoteRecord>;
   update: Database.Statement;
   delete: Database.Statement;
+  deleteAll: Database.Statement;
+  deleteOlderThan: Database.Statement;
   countByIpSince: Database.Statement;
   countAll: Database.Statement;
   countSearch: Database.Statement;
@@ -77,6 +79,8 @@ function migrateColumns(db: Database.Database): void {
 export class SqliteNoteRepository implements NoteRepository {
   private readonly db: Database.Database;
   private readonly stmt: Stmt;
+  /** Serialize async transactions on the single better-sqlite3 connection. */
+  private queue: Promise<void> = Promise.resolve();
 
   constructor(dbPath: string) {
     const absolute = resolve(dbPath);
@@ -112,6 +116,8 @@ export class SqliteNoteRepository implements NoteRepository {
          WHERE secret = ?`,
       ),
       delete: this.db.prepare(`DELETE FROM notes WHERE secret = ?`),
+      deleteAll: this.db.prepare(`DELETE FROM notes`),
+      deleteOlderThan: this.db.prepare(`DELETE FROM notes WHERE updated_at < ?`),
       countByIpSince: this.db.prepare(
         `SELECT COUNT(*) AS cnt FROM notes WHERE ip IS ? AND created_at >= ?`,
       ),
@@ -131,16 +137,37 @@ export class SqliteNoteRepository implements NoteRepository {
     return `%${escapeLike(q)}%`;
   }
 
-  countByIpSince(ip: string | null, sinceMs: number): number {
+  async countByIpSince(ip: string | null, sinceMs: number): Promise<number> {
     const row = this.stmt.countByIpSince.get(ip, sinceMs) as { cnt: number } | undefined;
     return row?.cnt ?? 0;
   }
 
-  withTransaction<T>(fn: () => T): T {
-    return this.db.transaction(fn)();
+  async withTransaction<T>(fn: () => Promise<T>): Promise<T> {
+    let release!: () => void;
+    const gate = new Promise<void>((resolve) => {
+      release = resolve;
+    });
+    const previous = this.queue;
+    this.queue = previous.then(() => gate);
+    await previous;
+    this.db.exec('BEGIN IMMEDIATE');
+    try {
+      const result = await fn();
+      this.db.exec('COMMIT');
+      return result;
+    } catch (err) {
+      try {
+        this.db.exec('ROLLBACK');
+      } catch {
+        // ignore rollback errors
+      }
+      throw err;
+    } finally {
+      release();
+    }
   }
 
-  create(input: CreateNoteInput): NoteRecord {
+  async create(input: CreateNoteInput): Promise<NoteRecord> {
     this.stmt.insert.run(
       input.id,
       input.secret,
@@ -153,20 +180,20 @@ export class SqliteNoteRepository implements NoteRepository {
       input.createdAt,
       input.updatedAt,
     );
-    const record = this.findById(input.id);
+    const record = await this.findById(input.id);
     if (!record) throw new Error('Created note could not be read back');
     return record;
   }
 
-  findById(id: string): NoteRecord | undefined {
+  async findById(id: string): Promise<NoteRecord | undefined> {
     return this.stmt.findById.get(id);
   }
 
-  findBySecret(secret: string): NoteRecord | undefined {
+  async findBySecret(secret: string): Promise<NoteRecord | undefined> {
     return this.stmt.findBySecret.get(secret);
   }
 
-  updateBySecret(secret: string, patch: UpdateNotePatch): NoteRecord | undefined {
+  async updateBySecret(secret: string, patch: UpdateNotePatch): Promise<NoteRecord | undefined> {
     this.stmt.update.run(
       patch.id ?? null,
       patch.id ?? null,
@@ -181,12 +208,19 @@ export class SqliteNoteRepository implements NoteRepository {
     return this.findBySecret(secret);
   }
 
-  deleteBySecret(secret: string): boolean {
+  async deleteBySecret(secret: string): Promise<boolean> {
     const result = this.stmt.delete.run(secret);
     return result.changes > 0;
   }
 
-  list(query: ListNotesQuery): NoteRecord[] {
+  async deleteOlderThan(updatedBeforeMs: number | null): Promise<number> {
+    if (updatedBeforeMs === null) {
+      return this.stmt.deleteAll.run().changes;
+    }
+    return this.stmt.deleteOlderThan.run(updatedBeforeMs).changes;
+  }
+
+  async list(query: ListNotesQuery): Promise<NoteRecord[]> {
     const q = query.q?.trim();
     if (!q) {
       return this.stmt.listAll.all(query.limit, query.offset) as NoteRecord[];
@@ -203,7 +237,7 @@ export class SqliteNoteRepository implements NoteRepository {
     ) as NoteRecord[];
   }
 
-  count(q?: string): number {
+  async count(q?: string): Promise<number> {
     const trimmed = q?.trim();
     if (!trimmed) {
       const row = this.stmt.countAll.get() as { cnt: number } | undefined;

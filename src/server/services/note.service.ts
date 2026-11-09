@@ -65,6 +65,42 @@ export interface AdminNoteListResult {
   pageSize: number;
 }
 
+/** 管理端清理：清空全部，或只保留最近一段时间内有更新的笔记。 */
+export type AdminPurgeKeep = 'all' | '7d' | '30d' | '90d' | '180d' | '365d';
+
+export interface AdminPurgeResult {
+  deleted: number;
+  keep: AdminPurgeKeep;
+}
+
+const DAY_MS = 24 * 60 * 60 * 1000;
+
+const PURGE_KEEP_MS: Record<Exclude<AdminPurgeKeep, 'all'>, number> = {
+  '7d': 7 * DAY_MS,
+  '30d': 30 * DAY_MS,
+  '90d': 90 * DAY_MS,
+  '180d': 180 * DAY_MS,
+  '365d': 365 * DAY_MS,
+};
+
+export function parseAdminPurgeKeep(raw: unknown): AdminPurgeKeep {
+  if (
+    raw === 'all' ||
+    raw === '7d' ||
+    raw === '30d' ||
+    raw === '90d' ||
+    raw === '180d' ||
+    raw === '365d'
+  ) {
+    return raw;
+  }
+  throw new AppError(
+    400,
+    ErrorCode.BAD_REQUEST,
+    'keep 必须是 all / 7d / 30d / 90d / 180d / 365d',
+  );
+}
+
 const PREVIEW_MAX = 160;
 
 export interface CreateNoteBody {
@@ -201,7 +237,11 @@ export class NoteService {
     private readonly sensitive?: SensitiveFilter,
   ) {}
 
-  create(origin: string, body: CreateNoteBody, ctx: CreateNoteContext): NoteFullDto {
+  async create(
+    origin: string,
+    body: CreateNoteBody,
+    ctx: CreateNoteContext,
+  ): Promise<NoteFullDto> {
     const title = sanitizeTitle(body.title);
     const content = requireContent(body.content);
     this.sensitive?.assertClean(title, content);
@@ -214,15 +254,15 @@ export class NoteService {
         : null);
     const now = Date.now();
 
-    const record = this.repo.withTransaction(() => {
-      this.assertCreateRateLimit(ctx.ip, now);
+    const record = await this.repo.withTransaction(async () => {
+      await this.assertCreateRateLimit(ctx.ip, now);
 
       // id 极小概率冲突时重试最多 3 次
       for (let attempt = 0; attempt < 3; attempt += 1) {
         const id = generateId();
         const secret = generateSecret();
         try {
-          return this.repo.create({
+          return await this.repo.create({
             id,
             secret,
             title,
@@ -246,9 +286,9 @@ export class NoteService {
   }
 
   /** 按 IP 限制创建频率：每分钟 ≤10，当天 ≤100。 */
-  private assertCreateRateLimit(ip: string | null, nowMs: number): void {
+  private async assertCreateRateLimit(ip: string | null, nowMs: number): Promise<void> {
     const minuteSince = nowMs - ONE_MINUTE_MS;
-    const minuteCount = this.repo.countByIpSince(ip, minuteSince);
+    const minuteCount = await this.repo.countByIpSince(ip, minuteSince);
     if (minuteCount >= CREATE_RATE_LIMIT_PER_MINUTE) {
       throw rateLimited(
         `创建过于频繁：同一 IP 每分钟最多创建 ${CREATE_RATE_LIMIT_PER_MINUTE} 篇，请稍后再试`,
@@ -257,7 +297,7 @@ export class NoteService {
     }
 
     const daySince = startOfLocalDay(nowMs);
-    const dayCount = this.repo.countByIpSince(ip, daySince);
+    const dayCount = await this.repo.countByIpSince(ip, daySince);
     if (dayCount >= CREATE_RATE_LIMIT_PER_DAY) {
       const msUntilTomorrow = daySince + 24 * 60 * 60 * 1000 - nowMs;
       const retryAfter = Math.max(1, Math.ceil(msUntilTomorrow / 1000));
@@ -268,20 +308,20 @@ export class NoteService {
     }
   }
 
-  getPublic(id: string): NotePublicDto {
-    const record = this.repo.findById(id);
+  async getPublic(id: string): Promise<NotePublicDto> {
+    const record = await this.repo.findById(id);
     if (!record) throw noteNotFound();
     return this.toPublic(record);
   }
 
-  getFullBySecret(origin: string, secret: string): NoteFullDto {
-    const record = this.repo.findBySecret(secret);
+  async getFullBySecret(origin: string, secret: string): Promise<NoteFullDto> {
+    const record = await this.repo.findBySecret(secret);
     if (!record) throw noteNotFound();
     return this.toFull(origin, record);
   }
 
-  update(origin: string, secret: string, body: UpdateNoteBody): NoteFullDto {
-    const record = this.repo.findBySecret(secret);
+  async update(origin: string, secret: string, body: UpdateNoteBody): Promise<NoteFullDto> {
+    const record = await this.repo.findBySecret(secret);
     if (!record) throw noteNotFound();
 
     const hasTitle = Object.prototype.hasOwnProperty.call(body, 'title');
@@ -308,7 +348,7 @@ export class NoteService {
     const id =
       nextId !== undefined && nextId !== record.id ? nextId : undefined;
     if (id !== undefined) {
-      const occupied = this.repo.findById(id);
+      const occupied = await this.repo.findById(id);
       if (occupied && occupied.secret !== secret) {
         throw validationFailed({ id: '该分享码已被占用，请换一个' }, '分享码冲突');
       }
@@ -316,7 +356,7 @@ export class NoteService {
 
     let updated: NoteRecord | undefined;
     try {
-      updated = this.repo.updateBySecret(secret, {
+      updated = await this.repo.updateBySecret(secret, {
         title,
         id,
         content,
@@ -338,25 +378,25 @@ export class NoteService {
     return this.toFull(origin, updated);
   }
 
-  remove(secret: string): void {
-    const record = this.repo.findBySecret(secret);
+  async remove(secret: string): Promise<void> {
+    const record = await this.repo.findBySecret(secret);
     if (!record) throw noteNotFound();
-    const deleted = this.repo.deleteBySecret(secret);
+    const deleted = await this.repo.deleteBySecret(secret);
     if (!deleted) throw noteNotFound();
     this.log?.info(`delete id=${record.id}`);
   }
 
-  listForAdmin(options: {
+  async listForAdmin(options: {
     page: number;
     pageSize: number;
     q?: string;
-  }): AdminNoteListResult {
+  }): Promise<AdminNoteListResult> {
     const page = Math.max(1, Math.floor(options.page) || 1);
     const pageSize = Math.min(100, Math.max(1, Math.floor(options.pageSize) || 20));
     const q = options.q?.trim() || undefined;
-    const total = this.repo.count(q);
+    const total = await this.repo.count(q);
     const offset = (page - 1) * pageSize;
-    const rows = this.repo.list({ limit: pageSize, offset, q });
+    const rows = await this.repo.list({ limit: pageSize, offset, q });
     return {
       items: rows.map((r) => this.toAdminListItem(r)),
       total,
@@ -365,9 +405,24 @@ export class NoteService {
     };
   }
 
+  /**
+   * 管理端批量清理：`all` 清空；其余按更新时间只保留最近窗口内的笔记。
+   */
+  async purgeForAdmin(keep: AdminPurgeKeep): Promise<AdminPurgeResult> {
+    const updatedBeforeMs =
+      keep === 'all' ? null : Date.now() - PURGE_KEEP_MS[keep];
+    const deleted = await this.repo.deleteOlderThan(updatedBeforeMs);
+    this.log?.info(
+      keep === 'all'
+        ? `admin purge all deleted=${deleted}`
+        : `admin purge keep=${keep} deleted=${deleted}`,
+    );
+    return { deleted, keep };
+  }
+
   /** 供 Raw 路由直接取原始内容，不存在抛 404。 */
-  getRawContent(id: string): { content: string } {
-    const record = this.repo.findById(id);
+  async getRawContent(id: string): Promise<{ content: string }> {
+    const record = await this.repo.findById(id);
     if (!record) throw noteNotFound();
     return { content: record.content };
   }

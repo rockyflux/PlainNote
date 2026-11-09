@@ -4,10 +4,13 @@ import { existsSync } from 'node:fs';
 import { createRequire } from 'node:module';
 import { homedir, networkInterfaces } from 'node:os';
 import { join, resolve } from 'node:path';
+import { loadEnvFile } from './load-env.js';
 import { resolveAdminCredentials } from './server/admin/credentials.js';
 import { createServer } from './server/index.js';
 import { defaultStaticDir } from './server/routes/static.js';
 import { maybeOfferUpdate } from './update-check.js';
+
+loadEnvFile();
 
 const DEFAULT_PORT = 3123;
 const DEFAULT_HOST = '0.0.0.0';
@@ -44,7 +47,11 @@ function lanIPv4Addresses(): string[] {
 
 function formatStartupError(error: unknown): string {
   if (error instanceof Error) {
-    if (error.message.includes('Database file could not be opened or is corrupted')) {
+    if (
+      error.message.includes('Database file could not be opened or is corrupted') ||
+      error.message.includes('Turso database could not be initialized') ||
+      error.message.includes('TURSO_AUTH_TOKEN is required')
+    ) {
       return error.message;
     }
     return `Failed to start: ${error.message}`;
@@ -115,7 +122,7 @@ async function main(): Promise<void> {
     dbPath,
     passwordOverride: options.adminPassword,
   });
-  const server = createServer({
+  const server = await createServer({
     dbPath,
     staticDir,
     sensitivePath,
@@ -134,7 +141,11 @@ async function main(): Promise<void> {
   for (const ip of networkIps) {
     console.log(`  Network: http://${ip}:${port}`);
   }
-  console.log(`  DB:      ${dbPath}`);
+  console.log(
+    server.storeKind === 'turso'
+      ? `  DB:      Turso (${server.storeLabel})`
+      : `  DB:      ${server.storeLabel}`,
+  );
   if (sensitivePath) console.log(`  Sensitive: ${sensitivePath}`);
   console.log(`  Admin:   ${localUrl}/admin`);
   console.log(`  Admin password file: ${admin.path}`);

@@ -2,11 +2,13 @@
 
 [English](README.md) | **中文**
 
+**项目地址：** https://github.com/rockyflux/plainnote
+
 匿名、免登录、可被 `curl` / 脚本 / LLM 直接消费的轻量 Markdown 笔记服务。写一次，同时得到 **私有编辑链接、网页只读链接、Raw 纯文本链接**。
 
 - 极简记事本体验 + 可编程 Raw 访问；**网页 Markdown 渲染阅读**（白名单清洗）为本产品能力。
-- 技术栈：**Node.js ≥ 18 · Fastify · better-sqlite3 · Vite（原生 TypeScript，无前端框架）**
-- 零外部服务依赖：数据存本地单个 SQLite 文件；界面 **中 / 英** 双语，内置 API 文档页 `/zh/docs`、`/docs`
+- 技术栈：**Node.js ≥ 18 · Fastify · better-sqlite3 / Turso(libSQL) · Vite（原生 TypeScript，无前端框架）**
+- 默认零外部服务依赖（本地 SQLite）；也可通过 `TURSO_DATABASE_URL` + `TURSO_AUTH_TOKEN` 使用 [Turso](https://turso.tech/pricing) 云端持久化。界面 **中 / 英** 双语，内置 API 文档页 `/zh/docs`、`/docs`
 
 ## 三链接模型
 
@@ -64,7 +66,9 @@ npm start -- [选项]
 |---|---|---|---|---|
 | `--port <n>` | `-p` | `3123` | `PORT` | 监听端口（1–65535） |
 | `--host <addr>` | `-H` | `0.0.0.0` | `HOST` | 监听地址；默认对外（含局域网）并打印警告；仅本机用 `127.0.0.1` |
-| `--db <path>` | `-d` | `~/.plainnote/plainnote.db` | `DB_PATH` | SQLite 文件路径，目录不存在时自动创建 |
+| `--db <path>` | `-d` | `~/.plainnote/plainnote.db` | `DB_PATH` | 本地 SQLite 路径（未配置 Turso 时使用）；目录不存在时自动创建。管理口令文件也写在同目录 |
+| — | — | — | `TURSO_DATABASE_URL` | Turso / libSQL 数据库 URL；设置后优先走云端库，忽略本地 SQLite 写入 |
+| — | — | — | `TURSO_AUTH_TOKEN` | Turso 鉴权 Token（与 URL 成对使用；勿提交到 Git） |
 | `--sensitive <path>` | — | 包内词库 | `SENSITIVE_PATH` | 敏感词库（一行一词）；创建/更新标题与正文时拦截 |
 | `--admin-password <pwd>` | — | 首次自动生成 | `ADMIN_PASSWORD` | 设置管理后台口令，写入数据库同目录的 `admin.password` |
 | `--show-admin-password` | — | 否 | — | 启动时打印已有管理口令（默认仅首次生成时打印） |
@@ -107,7 +111,7 @@ plainnote/
 │   │   ├── routes/             # JSON API、Raw、静态托管与 history 回退
 │   │   ├── services/           # 校验、敏感词、ID/secret、DTO 与链接组装
 │   │   ├── data/               # 敏感词库 sensitive.txt（构建时复制到 dist）
-│   │   └── store/              # 仓储 + better-sqlite3
+│   │   └── store/              # 仓储（SQLite / Turso）
 │   └── web/                    # Vite 前端 → dist/static
 │       ├── main.ts             # history 路由
 │       ├── pages/              # 首页 / 编辑 / 只读 / API 文档
@@ -122,7 +126,31 @@ plainnote/
 
 ## 部署
 
-本机构建并打包：
+### 使用 Turso（推荐免费云库）
+
+1. 在 [Turso](https://turso.tech/pricing) 创建库并生成 Token。Free 档约：100 库 / 5GB 存储 / 月读 5 亿行、写 1000 万行 / 同步 3GB（以官网为准）。
+2. 复制 `.env.example` 为 `.env`（或在平台环境变量中配置）：
+
+```bash
+TURSO_DATABASE_URL=libsql://your-db.turso.io
+TURSO_AUTH_TOKEN=你的token
+```
+
+3. 启动（会自动建表）：
+
+```bash
+npm ci
+npm run build
+npm start
+```
+
+**存储选择（很简单）：**
+
+- 配了 `TURSO_DATABASE_URL` + `TURSO_AUTH_TOKEN` → 走 Turso  
+- 没配 `TURSO_DATABASE_URL` → 走本地 SQLite  
+- 只配了 URL、没配 Token → 启动失败（不会悄悄回退）
+
+### 本机打包上传
 
 ```bash
 npm ci
@@ -136,7 +164,7 @@ npm pack
 npm install --omit=dev
 ```
 
-**宝塔：** 网站 → 添加 Node 项目 → 项目目录选解压目录 → 启动选项选 `start`（即 `node dist/cli.js`）→ 端口 `3123`。再给域名做反向代理到 `http://127.0.0.1:3123`。
+**宝塔：** 网站 → 添加 Node 项目 → 项目目录选解压目录 → 启动选项选 `start`（即 `node dist/cli.js`）→ 端口 `3123`。再给域名做反向代理到 `http://127.0.0.1:3123`。若用 Turso，在面板里加上上述两个环境变量即可。
 
 无面板时直接：`npm start`（或 `node dist/cli.js`），默认 `0.0.0.0:3123`（局域网可访问）。
 

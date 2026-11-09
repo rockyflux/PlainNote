@@ -1,5 +1,8 @@
 import type { FastifyInstance } from 'fastify';
-import type { NoteService } from '../services/note.service.js';
+import {
+  parseAdminPurgeKeep,
+  type NoteService,
+} from '../services/note.service.js';
 import { resolveClientIp } from '../http/client-meta.js';
 import { AppError, ErrorCode } from '../http/errors.js';
 import {
@@ -16,9 +19,16 @@ function parsePositiveInt(raw: unknown, fallback: number): number {
   return Math.floor(n);
 }
 
+function readJsonObject(body: unknown): Record<string, unknown> {
+  if (typeof body !== 'object' || body === null) {
+    throw new AppError(400, ErrorCode.BAD_REQUEST, '请求体必须是 JSON 对象');
+  }
+  return body as Record<string, unknown>;
+}
+
 /**
- * 管理端仅提供登录校验与笔记列表。
- * 查看 / 修改 / 删除仍走公开的 `/api/notes/:secret`（凭 note secret，无需管理口令）。
+ * 管理端：登录校验、笔记列表、按保留策略批量清理。
+ * 单条查看 / 修改 / 删除仍走公开的 `/api/notes/:secret`（凭 note secret）。
  */
 export function registerAdminApiRoutes(
   app: FastifyInstance,
@@ -37,10 +47,7 @@ export function registerAdminApiRoutes(
     } catch {
       throw new AppError(400, ErrorCode.BAD_REQUEST, '请求体不是合法 JSON');
     }
-    if (typeof body !== 'object' || body === null) {
-      throw new AppError(400, ErrorCode.BAD_REQUEST, '请求体必须是 JSON 对象');
-    }
-    const password = (body as { password?: unknown }).password;
+    const password = readJsonObject(body).password;
     if (typeof password !== 'string' || !password) {
       throw new AppError(400, ErrorCode.BAD_REQUEST, '请提供 password');
     }
@@ -54,11 +61,24 @@ export function registerAdminApiRoutes(
   app.get('/api/admin/notes', async (request, reply) => {
     assertAdminPassword(request, adminPassword);
     const query = request.query as { page?: string; pageSize?: string; q?: string };
-    const result = service.listForAdmin({
+    const result = await service.listForAdmin({
       page: parsePositiveInt(query.page, 1),
       pageSize: parsePositiveInt(query.pageSize, DEFAULT_PAGE_SIZE),
       q: typeof query.q === 'string' ? query.q : undefined,
     });
+    reply.send(result);
+  });
+
+  app.post('/api/admin/notes/purge', async (request, reply) => {
+    assertAdminPassword(request, adminPassword);
+    let body: unknown;
+    try {
+      body = request.body;
+    } catch {
+      throw new AppError(400, ErrorCode.BAD_REQUEST, '请求体不是合法 JSON');
+    }
+    const keep = parseAdminPurgeKeep(readJsonObject(body).keep);
+    const result = await service.purgeForAdmin(keep);
     reply.send(result);
   });
 }

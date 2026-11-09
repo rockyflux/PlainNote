@@ -1127,6 +1127,31 @@ button:disabled { opacity: 0.55; cursor: not-allowed; }
   gap: 10px;
   flex-wrap: wrap;
 }
+.admin-purge {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.admin-purge-label {
+  font-size: 13px;
+  color: var(--text-sub);
+}
+.admin-purge select {
+  font: inherit;
+  font-size: 13px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 6px 10px;
+  background: var(--bg);
+  color: var(--text);
+  max-width: min(100%, 220px);
+}
+.admin-purge-summary {
+  margin-top: 8px;
+  font-size: 13px;
+  color: var(--text-sub);
+}
 .admin-selected {
   font-size: 13px;
   color: var(--text-sub);

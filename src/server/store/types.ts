@@ -49,16 +49,21 @@ export interface ListNotesQuery {
 }
 
 export interface NoteRepository {
-  create(input: CreateNoteInput): NoteRecord;
-  findById(id: string): NoteRecord | undefined;
-  findBySecret(secret: string): NoteRecord | undefined;
-  updateBySecret(secret: string, patch: UpdateNotePatch): NoteRecord | undefined;
-  deleteBySecret(secret: string): boolean;
-  list(query: ListNotesQuery): NoteRecord[];
-  count(q?: string): number;
+  create(input: CreateNoteInput): Promise<NoteRecord>;
+  findById(id: string): Promise<NoteRecord | undefined>;
+  findBySecret(secret: string): Promise<NoteRecord | undefined>;
+  updateBySecret(secret: string, patch: UpdateNotePatch): Promise<NoteRecord | undefined>;
+  deleteBySecret(secret: string): Promise<boolean>;
+  /**
+   * 按更新时间清理：`updatedBeforeMs` 为 null 时删除全部；
+   * 否则删除 `updated_at < updatedBeforeMs` 的笔记。返回删除条数。
+   */
+  deleteOlderThan(updatedBeforeMs: number | null): Promise<number>;
+  list(query: ListNotesQuery): Promise<NoteRecord[]>;
+  count(q?: string): Promise<number>;
   /** 统计指定 IP 在 sinceMs（含）之后创建的笔记数；ip 为 null 时按空串匹配。 */
-  countByIpSince(ip: string | null, sinceMs: number): number;
-  /** 在同一 SQLite 事务中执行，保证限流计数与写入原子。 */
-  withTransaction<T>(fn: () => T): T;
-  close(): void;
+  countByIpSince(ip: string | null, sinceMs: number): Promise<number>;
+  /** 在同一事务中执行，保证限流计数与写入原子。 */
+  withTransaction<T>(fn: () => Promise<T>): Promise<T>;
+  close(): Promise<void> | void;
 }
