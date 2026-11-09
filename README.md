@@ -9,6 +9,7 @@ Anonymous, login-free Markdown notes that `curl`, scripts, and LLMs can consume 
 - Minimal notepad UX plus programmable Raw access; **in-browser Markdown rendering** (allowlist-sanitized) is part of this product.
 - Stack: **Node.js ≥ 18 · Fastify · better-sqlite3 / Turso (libSQL) · Vite (vanilla TypeScript, no frontend framework)**
 - Default: zero external services (local SQLite). Optionally set `TURSO_DATABASE_URL` + `TURSO_AUTH_TOKEN` for [Turso](https://turso.tech/pricing) cloud persistence. UI is **zh / en** with API docs at `/docs` and `/zh/docs`
+- **Vercel deploy:** use the [`Vercel`](https://github.com/rockyflux/PlainNote/tree/Vercel) branch (this `master` branch is for local / VPS / npm). Guide: [docs/vercel.md on `Vercel`](https://github.com/rockyflux/PlainNote/blob/Vercel/docs/vercel.md)
 
 ## Three-link model
 
@@ -147,6 +148,13 @@ npm start
 - Both `TURSO_DATABASE_URL` and `TURSO_AUTH_TOKEN` set → Turso  
 - No `TURSO_DATABASE_URL` → local SQLite  
 - URL set but token missing → startup fails (no silent fallback)
+
+### Deploy on Vercel
+
+`master` does **not** include the Vercel serverless entry. To deploy on Vercel:
+
+1. Switch to / deploy from the [`Vercel`](https://github.com/rockyflux/PlainNote/tree/Vercel) branch (`git checkout Vercel`, or select that branch when importing in Vercel).
+2. Follow the full guide: [docs/vercel.md](https://github.com/rockyflux/PlainNote/blob/Vercel/docs/vercel.md) (中文: [docs/vercel.zh-CN.md](https://github.com/rockyflux/PlainNote/blob/Vercel/docs/vercel.zh-CN.md)).
 
 ### Pack and upload
 

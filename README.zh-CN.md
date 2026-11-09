@@ -9,6 +9,7 @@
 - 极简记事本体验 + 可编程 Raw 访问；**网页 Markdown 渲染阅读**（白名单清洗）为本产品能力。
 - 技术栈：**Node.js ≥ 18 · Fastify · better-sqlite3 / Turso(libSQL) · Vite（原生 TypeScript，无前端框架）**
 - 默认零外部服务依赖（本地 SQLite）；也可通过 `TURSO_DATABASE_URL` + `TURSO_AUTH_TOKEN` 使用 [Turso](https://turso.tech/pricing) 云端持久化。界面 **中 / 英** 双语，内置 API 文档页 `/zh/docs`、`/docs`
+- **部署到 Vercel：** 请使用 [`Vercel`](https://github.com/rockyflux/PlainNote/tree/Vercel) 分支（本 `master` 面向本地 / VPS / npm）。说明：[docs/vercel.zh-CN.md（Vercel 分支）](https://github.com/rockyflux/PlainNote/blob/Vercel/docs/vercel.zh-CN.md)
 
 ## 三链接模型
 
@@ -147,6 +148,13 @@ npm start
 - 配了 `TURSO_DATABASE_URL` + `TURSO_AUTH_TOKEN` → 走 Turso  
 - 没配 `TURSO_DATABASE_URL` → 走本地 SQLite  
 - 只配了 URL、没配 Token → 启动失败（不会悄悄回退）
+
+### 部署到 Vercel
+
+`master` **不包含** Vercel Serverless 入口。若要部署到 Vercel：
+
+1. 切换到 [`Vercel`](https://github.com/rockyflux/PlainNote/tree/Vercel) 分支（`git checkout Vercel`，或在 Vercel 导入时选择该分支）。
+2. 按完整文档操作：[docs/vercel.zh-CN.md](https://github.com/rockyflux/PlainNote/blob/Vercel/docs/vercel.zh-CN.md)（English: [docs/vercel.md](https://github.com/rockyflux/PlainNote/blob/Vercel/docs/vercel.md)）。
 
 ### 本机打包上传
 
