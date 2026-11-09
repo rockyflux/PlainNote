@@ -91,7 +91,7 @@ npm start -- [选项]
 | `POST` | `/api/admin/login` | 管理登录 |
 | `GET` | `/api/admin/notes` | 管理端列表 |
 
-**管理后台：** `/admin` — 口令只解锁列表；查看/修改/删除仍凭笔记 `secret`。首次启动会在数据库同目录生成 `admin.password`。
+**管理后台：** `/admin` — 口令只解锁列表；查看/修改/删除仍凭笔记 `secret`。本地首次启动会在数据库同目录生成 `admin.password`；Vercel 只用环境变量 `ADMIN_PASSWORD`。
 
 **服务端限制：** 正文 ≤ 30000；标题 ≤ 200；同 IP 约 10 次/分钟、100 次/天；命中敏感词返回 422。
 
@@ -99,12 +99,16 @@ npm start -- [选项]
 
 ```
 plainnote/
+├── api/
+│   └── index.ts                # Vercel Serverless 入口（转发到 vercel-handler）
 ├── test/
 │   └── sanitize.mjs            # Markdown XSS 清洗（Node + jsdom）
 ├── src/
 │   ├── cli.ts                  # CLI 入口（commander、优雅关闭）
 │   ├── server/                 # Fastify → dist/server
-│   │   ├── index.ts
+│   │   ├── index.ts            # CLI createServer
+│   │   ├── app-core.ts         # 共享路由装配
+│   │   ├── vercel-handler.ts   # Serverless（仅 Turso）
 │   │   ├── http/               # 错误、origin、客户端元数据、安全头
 │   │   ├── routes/             # JSON API、Raw、静态托管与 history 回退
 │   │   ├── services/           # 校验、敏感词、ID/secret、DTO 与链接组装
@@ -117,6 +121,7 @@ plainnote/
 │       ├── lib/                # api、markdown、i18n、history、modal、DOM
 │       └── styles.css
 ├── dist/                       # 构建产物（gitignore）
+├── vercel.json                 # 静态输出 + /api /raw 路由
 ├── package.json
 ├── tsconfig.json
 └── vite.config.ts
@@ -147,6 +152,21 @@ npm start
 - 配了 `TURSO_DATABASE_URL` + `TURSO_AUTH_TOKEN` → 走 Turso  
 - 没配 `TURSO_DATABASE_URL` → 走本地 SQLite  
 - 只配了 URL、没配 Token → 启动失败（不会悄悄回退）
+
+### 部署到 Vercel（静态前端 + Serverless API）
+
+适合不想自备 Node 常驻进程的场景。数据库必须用 Turso；不写本地文件。
+
+**完整步骤（Fork、环境变量、公开访问、排错）：见 [docs/vercel.zh-CN.md](docs/vercel.zh-CN.md)。**
+
+摘要：
+
+1. **Fork 本仓库** → 在 [Vercel](https://vercel.com/new) 选择**你的 Fork**（一般不用改代码）。
+2. 配置你自己的 `TURSO_DATABASE_URL`、`TURSO_AUTH_TOKEN`（可选 `ADMIN_PASSWORD`）。
+3. **关闭 Deployment Protection 里的 Vercel Authentication**，否则访客会进登录墙。
+4. 构建产出 `dist/static`；`/api/*`、`/raw/*` 走 Serverless Fastify。
+
+本地 CLI / 宝塔等长驻部署方式不变。
 
 ### 本机打包上传
 

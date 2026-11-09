@@ -13,7 +13,7 @@
     "run.sh"
   ],
   "engines": {
-    "node": ">=18.0.0"
+    "node": "18.x || 20.x || 22.x"
   },
   "scripts": {
     "dev:server": "tsx watch src/cli.ts",
@@ -23,13 +23,12 @@
     "build": "npm run build:web && npm run build:server",
     "start": "node dist/cli.js",
     "pack": "npm pack --pack-destination .",
-    "test": "node test/sanitize.mjs && node test/update-check.mjs",
+    "test": "node test/sanitize.mjs && node test/update-check.mjs && node test/vercel-url.mjs",
     "clean": "rm -rf dist"
   },
   "dependencies": {
     "@fastify/static": "^7.0.4",
     "@libsql/client": "^0.18.0",
-    "better-sqlite3": "^11.10.0",
     "commander": "^12.1.0",
     "dompurify": "^3.1.7",
     "fastify": "^4.28.1",
@@ -43,5 +42,8 @@
     "tsx": "^4.16.2",
     "typescript": "^5.5.4",
     "vite": "^5.3.4"
+  },
+  "optionalDependencies": {
+    "better-sqlite3": "^11.10.0"
   }
 }

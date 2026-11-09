@@ -8,6 +8,23 @@ export function defaultSensitivePath(): string {
   return join(dirname(fileURLToPath(import.meta.url)), '../data/sensitive.txt');
 }
 
+/**
+ * Resolve lexicon for serverless / cwd-based deploys where import.meta.url
+ * may point at a bundled file without a sibling data/ directory.
+ */
+export function resolveSensitiveLexiconPath(): string | undefined {
+  const candidates = [
+    join(process.cwd(), 'dist', 'server', 'data', 'sensitive.txt'),
+    join(process.cwd(), 'src', 'server', 'data', 'sensitive.txt'),
+  ];
+  for (const path of candidates) {
+    if (existsSync(path)) return path;
+  }
+  const packaged = defaultSensitivePath();
+  if (existsSync(packaged)) return packaged;
+  return undefined;
+}
+
 interface CompiledTerm {
   /** 原始词条 */
   word: string;
@@ -67,6 +84,10 @@ export class SensitiveFilter {
       throw new Error(`敏感词库文件不存在：${filePath}`);
     }
     const text = readFileSync(filePath, 'utf8');
+    return SensitiveFilter.loadFromText(text);
+  }
+
+  static loadFromText(text: string): SensitiveFilter {
     const lines = text.split(/\r?\n/);
     return new SensitiveFilter(lines);
   }

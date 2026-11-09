@@ -74,7 +74,7 @@ const ZH: Copy = {
   title: '管理后台',
   loginLead: '输入启动时生成的管理口令。登录后本标签页会记住口令，每次请求仍由服务端校验。',
   passwordLabel: '管理口令',
-  passwordPlaceholder: '粘贴 admin.password 中的口令',
+  passwordPlaceholder: '管理口令（ADMIN_PASSWORD 或 admin.password）',
   loginBtn: '登录',
   loggingIn: '登录中…',
   loginFailed: '登录失败',
@@ -134,7 +134,7 @@ const EN: Copy = {
   loginLead:
     'Enter the admin password printed at startup. It is remembered in this tab; every request is still verified by the server.',
   passwordLabel: 'Admin password',
-  passwordPlaceholder: 'Paste the password from admin.password',
+  passwordPlaceholder: 'Admin password (ADMIN_PASSWORD or admin.password)',
   loginBtn: 'Sign in',
   loggingIn: 'Signing in…',
   loginFailed: 'Sign-in failed',

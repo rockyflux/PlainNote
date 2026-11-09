@@ -91,7 +91,7 @@ Full curl examples: `/docs` (EN) or `/zh/docs` (ZH).
 | `POST` | `/api/admin/login` | Admin login |
 | `GET` | `/api/admin/notes` | Admin note list |
 
-**Admin UI:** `/admin` — password unlocks the list; view/edit/delete still use each note's `secret`. First start writes `admin.password` next to the DB.
+**Admin UI:** `/admin` — password unlocks the list; view/edit/delete still use each note's `secret`. Local first start writes `admin.password` next to the DB; on Vercel use `ADMIN_PASSWORD` only.
 
 **Limits:** content ≤ 30000 chars; title ≤ 200; ≈10 creates/min and 100/day per IP; sensitive words → 422.
 
@@ -99,12 +99,16 @@ Full curl examples: `/docs` (EN) or `/zh/docs` (ZH).
 
 ```
 plainnote/
+├── api/
+│   └── index.ts                # Vercel serverless entry → vercel-handler
 ├── test/
 │   └── sanitize.mjs            # Markdown XSS sanitization (Node + jsdom)
 ├── src/
 │   ├── cli.ts                  # CLI entry (commander, graceful shutdown)
 │   ├── server/                 # Fastify → dist/server
-│   │   ├── index.ts
+│   │   ├── index.ts            # CLI createServer
+│   │   ├── app-core.ts         # Shared route wiring
+│   │   ├── vercel-handler.ts   # Serverless (Turso only)
 │   │   ├── http/               # Errors, origin, client meta, security headers
 │   │   ├── routes/             # JSON API, Raw, static + history fallback
 │   │   ├── services/           # Validation, sensitive filter, id/secret, DTOs & URLs
@@ -117,6 +121,7 @@ plainnote/
 │       ├── lib/                # api, markdown, i18n, history, modal, DOM helpers
 │       └── styles.css
 ├── dist/                       # Build output (gitignored)
+├── vercel.json                 # Static output + /api /raw routing
 ├── package.json
 ├── tsconfig.json
 └── vite.config.ts
@@ -147,6 +152,21 @@ npm start
 - Both `TURSO_DATABASE_URL` and `TURSO_AUTH_TOKEN` set → Turso  
 - No `TURSO_DATABASE_URL` → local SQLite  
 - URL set but token missing → startup fails (no silent fallback)
+
+### Deploy on Vercel (static frontend + serverless API)
+
+Use this when you do not want a long-running Node process. Turso is required; no local files.
+
+**Full guide (fork, env, public access, troubleshooting): [docs/vercel.md](docs/vercel.md).**
+
+Summary:
+
+1. **Fork this repo** → in [Vercel](https://vercel.com/new) import **your fork** (usually no code changes).
+2. Set your own `TURSO_DATABASE_URL`, `TURSO_AUTH_TOKEN` (optional `ADMIN_PASSWORD`).
+3. **Disable Vercel Authentication** under Deployment Protection, or visitors hit a login wall.
+4. Build outputs `dist/static`; `/api/*` and `/raw/*` go to serverless Fastify.
+
+Local CLI / VPS long-running deploy is unchanged.
 
 ### Pack and upload
 

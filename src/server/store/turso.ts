@@ -1,4 +1,5 @@
-import { createClient, type Client, type Row, type Transaction } from '@libsql/client';
+// HTTP client only — avoids native `libsql` / better-sqlite3 on Vercel & remote Turso.
+import { createClient, type Client, type Row, type Transaction } from '@libsql/client/http';
 import type {
   CreateNoteInput,
   ListNotesQuery,

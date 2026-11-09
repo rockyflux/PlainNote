@@ -1,21 +1,11 @@
-import Fastify, { type FastifyInstance } from 'fastify';
+import { buildPlainNoteApp, type PlainNoteApp } from './app-core.js';
 import { createNoteRepository } from './store/create.js';
 import type { NoteRepository } from './store/types.js';
-import { NoteService } from './services/note.service.js';
-import {
-  SensitiveFilter,
-  defaultSensitivePath,
-} from './services/sensitive-filter.js';
-import { registerErrorHandler } from './http/errors.js';
-import { registerSecurityHooks, safeReqSerializer } from './http/security.js';
-import { registerNoteApiRoutes } from './routes/notes.api.js';
-import { registerAdminApiRoutes } from './routes/admin.api.js';
-import { registerRawRoute } from './routes/raw.js';
-import { registerStaticRoutes } from './routes/static.js';
 
 export interface ServerOptions {
   dbPath: string;
-  staticDir: string;
+  /** When omitted / empty, static file hosting is skipped (serverless). */
+  staticDir?: string;
   /** 敏感词库路径；默认 server/data/sensitive.txt */
   sensitivePath?: string;
   /** 管理后台口令；未提供则不注册管理 API。 */
@@ -24,64 +14,31 @@ export interface ServerOptions {
   tursoUrl?: string;
   /** Turso auth token；也可用环境变量 TURSO_AUTH_TOKEN。 */
   tursoAuthToken?: string;
+  /** Force Turso only (no better-sqlite3). Also implied when VERCEL=1. */
+  tursoOnly?: boolean;
+  /** Trust X-Forwarded-* (needed behind Vercel / reverse proxies). */
+  trustProxy?: boolean | number | string | string[];
 }
 
-export interface PlainNoteServer {
-  app: FastifyInstance;
-  /** Safe store label for startup logs (path or Turso URL). */
-  storeLabel: string;
-  storeKind: 'sqlite' | 'turso';
-  close(): Promise<void>;
-}
+export type PlainNoteServer = PlainNoteApp;
 
 export async function createServer(options: ServerOptions): Promise<PlainNoteServer> {
-  const app = Fastify({
-    logger: {
-      level: 'info',
-      serializers: {
-        req: safeReqSerializer,
-      },
-    },
-  });
-
-  registerErrorHandler(app);
-  registerSecurityHooks(app);
-
-  const sensitivePath = options.sensitivePath ?? defaultSensitivePath();
-  const sensitive = SensitiveFilter.loadFromFile(sensitivePath);
-  app.log.info(`sensitive lexicon loaded: ${sensitive.size} terms from ${sensitivePath}`);
-
   const { repository, label, kind } = await createNoteRepository({
     dbPath: options.dbPath,
     tursoUrl: options.tursoUrl,
     tursoAuthToken: options.tursoAuthToken,
+    tursoOnly: options.tursoOnly,
   });
-  const service = new NoteService(
+
+  return buildPlainNoteApp({
     repository,
-    {
-      info: (msg) => {
-        app.log.info(msg);
-      },
-    },
-    sensitive,
-  );
-
-  registerNoteApiRoutes(app, service);
-  if (options.adminPassword) {
-    registerAdminApiRoutes(app, service, options.adminPassword);
-  }
-  registerRawRoute(app, service);
-  registerStaticRoutes(app, options.staticDir);
-
-  return {
-    app,
     storeLabel: label,
     storeKind: kind,
-    async close() {
-      await app.close();
-      await repository.close();
-    },
-  };
+    staticDir: options.staticDir,
+    sensitivePath: options.sensitivePath,
+    adminPassword: options.adminPassword,
+    trustProxy: options.trustProxy,
+  });
 }
 
 export type { NoteRepository };

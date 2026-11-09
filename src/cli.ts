@@ -126,7 +126,7 @@ async function main(): Promise<void> {
     dbPath,
     staticDir,
     sensitivePath,
-    adminPassword: admin.password,
+    adminPassword: admin?.password,
   });
 
   await server.app.listen({ host, port });
@@ -148,16 +148,20 @@ async function main(): Promise<void> {
   );
   if (sensitivePath) console.log(`  Sensitive: ${sensitivePath}`);
   console.log(`  Admin:   ${localUrl}/admin`);
-  console.log(`  Admin password file: ${admin.path}`);
-  if (admin.generated || options.showAdminPassword) {
-    console.log(`  Admin password: ${admin.password}`);
-    if (admin.generated) {
-      console.log('  (First-time password — save it; later startups hide it by default)');
-    }
+  if (!admin) {
+    console.log('  Admin password: (disabled — set ADMIN_PASSWORD or use local first-run file)');
   } else {
-    console.log(
-      '  Admin password: (hidden — use --show-admin-password or read the password file)',
-    );
+    console.log(`  Admin password file: ${admin.path}`);
+    if (admin.generated || options.showAdminPassword) {
+      console.log(`  Admin password: ${admin.password}`);
+      if (admin.generated) {
+        console.log('  (First-time password — save it; later startups hide it by default)');
+      }
+    } else {
+      console.log(
+        '  Admin password: (hidden — use --show-admin-password or read the password file)',
+      );
+    }
   }
   if (listenAll) {
     console.warn(
