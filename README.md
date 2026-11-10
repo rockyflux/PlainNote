@@ -4,6 +4,8 @@
 
 **Repository:** https://github.com/rockyflux/plainnote
 
+**Demo:** https://plainshare-one.vercel.app  [https://note.180813.xyz](https://note.180813.xyz)
+
 Anonymous, login-free Markdown notes that `curl`, scripts, and LLMs can consume directly. Write once, get **a private edit link, a read-only web link, and a Raw plaintext link**.
 
 - Minimal notepad UX plus programmable Raw access; **in-browser Markdown rendering** (allowlist-sanitized) is part of this product.
@@ -158,7 +160,7 @@ npm start
 
 You can host PlainNote on Vercel without a long-running Node process. **Turso is required**; no local SQLite / password files.
 
-**→ Full guide: [docs/vercel.md](docs/vercel.md)** (fork, env vars, public access, troubleshooting)
+**→ Full guide: [docs/vercel.md](https://github.com/rockyflux/PlainNote/blob/Vercel/docs/vercel.md)** (fork, env vars, public access, troubleshooting)
 
 Quick path:
 

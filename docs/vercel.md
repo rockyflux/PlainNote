@@ -4,28 +4,6 @@
 
 This repo is ready for **Fork → pick your GitHub repo in Vercel → Deploy**.
 
-It runs as **static Vite assets + one Serverless Fastify function + Turso**. There is no long-lived `node dist/cli.js` on Vercel, and no local SQLite / `admin.password` file.
-
----
-
-## Can I fork and deploy without code changes?
-
-**Yes.** You usually **do not need to change code**. The repo already includes:
-
-- `vercel.json` (install / build / output / rewrites)
-- `api/index.ts` (serverless entry)
-- Turso via `@libsql/client/http` (no native `better-sqlite3` on Vercel)
-
-What you must provide is **configuration**, not source edits:
-
-- Fork the repo to your GitHub → **no code change**
-- Create your own Turso DB + token → **no code change**
-- Set Vercel environment variables → **no code change**
-- Disable Vercel Authentication for public access → **no code change**
-- Deploy a branch that contains `vercel.json` + `api/` → **no code change**
-
-If a branch is missing the Vercel files, use a branch that has them, or merge those commits into your default branch.
-
 ---
 
 ## Recommended: Fork + Vercel GitHub import
@@ -53,14 +31,16 @@ Use **your own** database; do not reuse someone else’s token.
    - **Install Command:** `npm ci`
    - **Build Command:** `npm run build`
    - **Output Directory:** `dist/static`
-   - **Node.js:** `22.x` (recommended on Vercel; package allows `18.x || 20.x || 22.x`)
-4. Environment variables (Production; Preview recommended):
+4. **After import, set these two** (wrong values break Production or fail install on Node 26):
+   - **Settings → Environments → Branch Tracking** → Production branch **`Vercel`** (not `master`; `master` has no `vercel.json` / `api/`)
+   - **Settings → Node.js Version** → **`22.x`** (package allows `18.x || 20.x || 22.x`; avoid open ranges like `>=18` that auto-upgrade to 26)
+5. Environment variables (Production; Preview recommended):
    - `TURSO_DATABASE_URL` (required) — your Turso URL
    - `TURSO_AUTH_TOKEN` (required) — your token
    - `ADMIN_PASSWORD` (optional) — enables `/api/admin/*` when set
-5. Deploy. Vercel assigns a `*.vercel.app` URL (see the dashboard).
+6. Deploy. Vercel assigns a `*.vercel.app` URL (see the dashboard).
 
-Later pushes/PRs to that GitHub repo follow Vercel’s Git integration.
+Later pushes to the **`Vercel`** branch follow Production; other branches get Preview.
 
 ### 4. Public access
 
@@ -113,14 +93,14 @@ npx vercel deploy --yes --prod --scope YOUR_TEAM_OR_USER
 
 ## Troubleshooting notes
 
-- Prefer Node **22.x** in the Vercel project settings; the package `engines` field allows `18.x || 20.x || 22.x`.
+- **Redeploy fails on `better-sqlite3` / Node 26:** set **Settings → Environments → Branch Tracking** to **`Vercel`**, and **Settings → Node.js Version** to **`22.x`**, then redeploy from the `Vercel` branch (do not redeploy `master`).
 - Keep `better-sqlite3` as an optional dependency so Vercel installs do not hard-fail on native builds.
 
 ## When do you need code changes?
 
 Standard fork deploy: **none**. Only if you want something different:
 
-- **Default branch lacks Vercel files** — switch/merge a branch that has them
+- **Production branch lacks Vercel files** — point Branch Tracking at **`Vercel`**, or merge that branch into the default
 - **Custom build/output** — edit `vercel.json` or override in the dashboard
 - **No Turso** — not supported on this Vercel shape; use local/VPS SQLite or another DB yourself
 - **Custom domain** — Dashboard → Domains (no code)
@@ -132,12 +112,14 @@ Standard fork deploy: **none**. Only if you want something different:
 1. [ ] Forked to your GitHub
 2. [ ] Your own Turso URL + token
 3. [ ] Vercel imports **your fork**
-4. [ ] Env vars set
-5. [ ] Branch includes `vercel.json` + `api/index.ts`
-6. [ ] Build green
-7. [ ] Vercel Authentication off (if public)
-8. [ ] Anonymous homepage + create + `/raw/:id` work
-9. [ ] Optional: `ADMIN_PASSWORD` + `/admin`
+4. [ ] **Branch Tracking** Production = **`Vercel`**
+5. [ ] **Node.js Version** = **`22.x`**
+6. [ ] Env vars set
+7. [ ] Branch includes `vercel.json` + `api/index.ts`
+8. [ ] Build green
+9. [ ] Vercel Authentication off (if public)
+10. [ ] Anonymous homepage + create + `/raw/:id` work
+11. [ ] Optional: `ADMIN_PASSWORD` + `/admin`
 
 ---
 

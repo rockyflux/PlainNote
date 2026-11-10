@@ -4,6 +4,8 @@
 
 **项目地址：** https://github.com/rockyflux/plainnote
 
+**演示地址：** https://plainshare-one.vercel.app  [https://note.180813.xyz](https://note.180813.xyz)
+
 匿名、免登录、可被 `curl` / 脚本 / LLM 直接消费的轻量 Markdown 笔记服务。写一次，同时得到 **私有编辑链接、网页只读链接、Raw 纯文本链接**。
 
 - 极简记事本体验 + 可编程 Raw 访问；**网页 Markdown 渲染阅读**（白名单清洗）为本产品能力。
@@ -158,7 +160,7 @@ npm start
 
 PlainNote **可以部署到 Vercel**，无需自备常驻 Node 进程。**必须使用 Turso**；不写本地 SQLite / 口令文件。
 
-**→ 完整部署文档：[docs/vercel.zh-CN.md](docs/vercel.zh-CN.md)**（Fork、环境变量、公开访问、排错）
+**→ 完整部署文档：[docs/vercel.zh-CN.md](https://github.com/rockyflux/PlainNote/blob/Vercel/docs/vercel.zh-CN.md)**（Fork、环境变量、公开访问、排错）
 
 快速路径：
 

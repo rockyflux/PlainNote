@@ -4,28 +4,6 @@
 
 本仓库已支持 **Fork → 在 Vercel 里选中你的 GitHub 仓库 → 一键部署**。
 
-形态是 **静态前端（Vite）+ Serverless API（Fastify）+ Turso**，不在 Vercel 上跑 `node dist/cli.js` 常驻进程，也不使用本地 SQLite / `admin.password` 文件。
-
----
-
-## 结论：能不能 Fork 后直接部署？
-
-**可以。** 一般**不用改代码**。仓库里已有：
-
-- `vercel.json`（Install / Build / Output / rewrite）
-- `api/index.ts`（Serverless 入口）
-- 生产路径只用 Turso HTTP 客户端（不依赖 `better-sqlite3` 原生编译）
-
-你需要自己准备的是**配置**，不是改源码：
-
-- Fork 仓库到自己的 GitHub → **不用改代码**
-- 在 Turso 建库并拿 Token → **不用改代码**
-- 在 Vercel 填环境变量 → **不用改代码**
-- 关闭 Vercel Authentication（公开访问） → **不用改代码**
-- 选对要部署的分支（含 `vercel.json` / `api/`） → **不用改代码**
-
-若上游某分支还没合入 Vercel 相关文件，Fork 后请使用**已包含这些文件的分支**，或自行把该分支合并进你要用的默认分支。
-
 ---
 
 ## 推荐流程：Fork + Vercel 连接 GitHub
@@ -53,14 +31,16 @@
    - **Install Command：** `npm ci`
    - **Build Command：** `npm run build`
    - **Output Directory：** `dist/static`
-   - **Node.js Version：** `22.x`（Vercel 推荐；包支持 `18.x || 20.x || 22.x`）
-4. 环境变量（Production；建议 Preview 也勾上）：
+4. **导入后务必核对这两项**（否则 Production 可能跟错分支，或被升到 Node 26 导致 `better-sqlite3` 编译失败）：
+   - **Settings → Environments → Branch Tracking** → 生产分支设为 **`Vercel`**（不要用 `master`；`master` 不含 `vercel.json` / `api/`）
+   - **Settings → Node.js Version** → **`22.x`**（包支持 `18.x || 20.x || 22.x`；勿用开放范围如 `>=18` 以免自动升到 26）
+5. 环境变量（Production；建议 Preview 也勾上）：
    - `TURSO_DATABASE_URL`（必填）— 你的 Turso URL
    - `TURSO_AUTH_TOKEN`（必填）— 你的 Token
-   - `ADMIN_PASSWORD`（可选）— 管理后台口令；不设则无 `/api/admin/*`
-5. Deploy。成功后 Vercel 会分配 `https://项目名-….vercel.app`（以控制台显示为准）。
+   - `ADMIN_PASSWORD`（可选）— 管理后台口令；不设则关 `/api/admin/*`
+6. Deploy。成功后 Vercel 会分配 `https://项目名-….vercel.app`（以控制台显示为准）。
 
-之后对该 GitHub 仓库的 push / PR，会按 Vercel 的 Git 集成自动 Preview / Production 部署。
+之后对该 GitHub 仓库 **`Vercel` 分支** 的 push，会按 Vercel 的 Git 集成自动 Production 部署；其他分支走 Preview。
 
 ### 4. 公开访问（关闭登录墙）
 
@@ -120,16 +100,6 @@ npx vercel deploy --yes --prod --scope YOUR_TEAM_OR_USER
 
 ---
 
-## `vercel.json` 在做什么
-
-- 静态资源走 CDN；磁盘上已有文件优先于 rewrite。
-- `/api/*`、`/raw/*` 进入同一个 Serverless 函数，由 Fastify 按**对外路径**路由。
-- SPA 路径回退到 `index.html`。
-- `includeFiles` 把敏感词库打进函数包。
-- `better-sqlite3` 在 `optionalDependencies`；Vercel 上只用 `@libsql/client/http`。
-
----
-
 ## 本地 CLI vs Vercel
 
 - **入口**
@@ -154,7 +124,7 @@ npx vercel deploy --yes --prod --scope YOUR_TEAM_OR_USER
 
 Fork 标准部署通常**不用改**。仅在这些情况才考虑动代码或配置：
 
-- **默认分支没有 `vercel.json` / `api/`** — 换含这些文件的分支，或把该提交合并进默认分支
+- **默认 / Production 分支没有 `vercel.json` / `api/`** — 将 **Branch Tracking** 指到含这些文件的 **`Vercel`** 分支，或把该提交合并进默认分支
 - **想改构建命令 / 输出目录** — 改 `vercel.json`（或 Vercel 控制台覆盖）
 - **想拆多个 Serverless 函数** — 自改 `api/` 与 rewrite（进阶，非必须）
 - **坚持不用 Turso** — 不适合当前 Vercel 形态；请用本机/VPS + SQLite，或自行接其他云库
@@ -164,11 +134,14 @@ Fork 标准部署通常**不用改**。仅在这些情况才考虑动代码或�
 
 ## 常见问题
 
-**构建卡在 `better-sqlite3` / Node 版本**  
-Vercel 项目建议选 Node `22.x`；`better-sqlite3` 保持为 optional。
+**之前能部署、重新 Deploy 后卡在 `better-sqlite3` / Node 26**  
+核对：
+1. **Settings → Environments → Branch Tracking** → **`Vercel`**
+2. **Settings → Node.js Version** → **`22.x`**  
+然后从 `Vercel` 分支重新 Deploy（不要 Redeploy `master`）。`better-sqlite3` 在该分支为 optional，仅本地 SQLite 需要。
 
 **POST `/api/notes` 成功，GET `/api/notes/:id` 或 `/raw/:id` 变成平台 `NOT_FOUND`**  
-确认部署分支仍包含 `vercel.json` 里把 `/api/(.*)`、`/raw/(.*)` rewrite 到 `/api` 的配置。
+确认 Production 跟踪的是 **`Vercel`** 分支，且包含 `vercel.json` 里把 `/api/(.*)`、`/raw/(.*)` rewrite 到 `/api` 的配置。
 
 **改了环境变量仍报缺 Token**  
 重新触发一次 Production Deploy。
@@ -183,12 +156,14 @@ Vercel 项目建议选 Node `22.x`；`better-sqlite3` 保持为 optional。
 1. [ ] 已 Fork 到自己的 GitHub
 2. [ ] 自己的 Turso 库 + Token
 3. [ ] Vercel 导入的是**你的 Fork**
-4. [ ] 环境变量已配（Production，建议含 Preview）
-5. [ ] 部署分支含 `vercel.json` 与 `api/index.ts`
-6. [ ] Build 成功
-7. [ ] 已关闭 Vercel Authentication（若需完全公开）
-8. [ ] 匿名可打开首页；`POST /api/notes` 与 `/raw/:id` 可用
-9. [ ] （可选）`ADMIN_PASSWORD` + `/admin`
+4. [ ] **Branch Tracking** 生产分支为 **`Vercel`**
+5. [ ] **Node.js Version** 为 **`22.x`**
+6. [ ] 环境变量已配（Production，建议含 Preview）
+7. [ ] 部署分支含 `vercel.json` 与 `api/index.ts`
+8. [ ] Build 成功
+9. [ ] 已关闭 Vercel Authentication（若需完全公开）
+10. [ ] 匿名可打开首页；`POST /api/notes` 与 `/raw/:id` 可用
+11. [ ] （可选）`ADMIN_PASSWORD` + `/admin`
 
 ---
 
