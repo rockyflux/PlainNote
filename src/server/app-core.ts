@@ -1,3 +1,4 @@
+import { createRequire } from 'node:module';
 import Fastify, { type FastifyInstance } from 'fastify';
 import type { NoteRepository } from './store/types.js';
 import { NoteService } from './services/note.service.js';
@@ -10,8 +11,19 @@ import { registerErrorHandler } from './http/errors.js';
 import { registerSecurityHooks, safeReqSerializer } from './http/security.js';
 import { registerNoteApiRoutes } from './routes/notes.api.js';
 import { registerAdminApiRoutes } from './routes/admin.api.js';
+import { registerMcpRoutes } from './routes/mcp.js';
 import { registerRawRoute } from './routes/raw.js';
 import { registerStaticRoutes } from './routes/static.js';
+
+const require = createRequire(import.meta.url);
+
+function resolvePackageVersion(): string {
+  try {
+    return (require('../../package.json') as { version?: string }).version ?? '0.0.0';
+  } catch {
+    return '0.0.0';
+  }
+}
 
 export interface AppCoreOptions {
   repository: NoteRepository;
@@ -69,6 +81,7 @@ export async function buildPlainNoteApp(options: AppCoreOptions): Promise<PlainN
   if (options.adminPassword) {
     registerAdminApiRoutes(app, service, options.adminPassword);
   }
+  registerMcpRoutes(app, service, { version: resolvePackageVersion() });
   registerRawRoute(app, service);
 
   const staticDir = options.staticDir?.trim();

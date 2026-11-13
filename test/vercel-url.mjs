@@ -23,5 +23,9 @@ assert.equal(
   normalizeVercelRequestUrl('/api', { 'x-forwarded-uri': '/raw/xyz' }),
   '/raw/xyz',
 );
+assert.equal(
+  normalizeVercelRequestUrl('/api', { 'x-forwarded-uri': '/mcp' }),
+  '/mcp',
+);
 
 console.log('vercel-url: ok');

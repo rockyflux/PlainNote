@@ -14,6 +14,8 @@
     { "source": "/api/(.*)", "destination": "/api" },
     { "source": "/raw", "destination": "/api" },
     { "source": "/raw/(.*)", "destination": "/api" },
+    { "source": "/mcp", "destination": "/api" },
+    { "source": "/mcp/(.*)", "destination": "/api" },
     { "source": "/edit/:secret", "destination": "/index.html" },
     { "source": "/note/:id", "destination": "/index.html" },
     { "source": "/admin", "destination": "/index.html" },
