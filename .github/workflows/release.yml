@@ -1,0 +1,118 @@
+name: Release
+
+on:
+  workflow_dispatch:
+    inputs:
+      bump:
+        description: Semver bump (from current package.json on the selected branch)
+        type: choice
+        options:
+          - patch
+          - minor
+          - major
+        default: patch
+      dry_run:
+        description: Build/test only; skip branch, tag, GitHub Release, and npm publish
+        type: boolean
+        default: false
+
+permissions:
+  contents: write
+  id-token: write
+
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          ref: ${{ github.ref_name }}
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          registry-url: 'https://registry.npmjs.org'
+          cache: npm
+
+      - name: Install
+        run: npm ci
+
+      - name: Test
+        run: npm test
+
+      - name: Build
+        run: npm run build
+
+      - name: Bump version
+        id: ver
+        run: |
+          set -euo pipefail
+          NEW_RAW="$(npm version "${{ inputs.bump }}" --no-git-tag-version)"
+          NEW="${NEW_RAW#v}"
+          {
+            echo "version=${NEW}"
+            echo "branch=release/${NEW}"
+            echo "tag=v${NEW}"
+          } >> "$GITHUB_OUTPUT"
+          echo "Next version: ${NEW} (branch release/${NEW}, tag v${NEW})"
+
+      - name: Stop after dry run
+        if: ${{ inputs.dry_run }}
+        run: |
+          echo "Dry run complete for ${{ steps.ver.outputs.version }}; no git/npm publish."
+          git checkout -- package.json package-lock.json || true
+
+      - name: Create release branch, tag, and sync default branch
+        if: ${{ !inputs.dry_run }}
+        env:
+          TARGET_BRANCH: ${{ github.ref_name }}
+          RELEASE_BRANCH: ${{ steps.ver.outputs.branch }}
+          VERSION: ${{ steps.ver.outputs.version }}
+          TAG: ${{ steps.ver.outputs.tag }}
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+          git checkout -B "$RELEASE_BRANCH"
+          git add package.json package-lock.json
+          git commit -m "Release ${VERSION}"
+
+          git tag -a "$TAG" -m "Release ${VERSION}"
+          git push origin "HEAD:${RELEASE_BRANCH}"
+          git push origin "HEAD:${TARGET_BRANCH}"
+          git push origin "$TAG"
+
+      - name: Create GitHub Release
+        if: ${{ !inputs.dry_run }}
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAG: ${{ steps.ver.outputs.tag }}
+          VERSION: ${{ steps.ver.outputs.version }}
+          RELEASE_BRANCH: ${{ steps.ver.outputs.branch }}
+        run: |
+          set -euo pipefail
+          gh release create "$TAG" \
+            --title "v${VERSION}" \
+            --generate-notes \
+            --target "$RELEASE_BRANCH"
+
+      - name: Publish to npm
+        if: ${{ !inputs.dry_run }}
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+        run: |
+          set -euo pipefail
+          if [ -z "${NODE_AUTH_TOKEN}" ]; then
+            echo "NPM_TOKEN secret is empty; skipped npm publish. Git tag/branch/release were still created."
+            exit 0
+          fi
+          npm publish --access public

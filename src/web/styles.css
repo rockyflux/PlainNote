@@ -88,6 +88,13 @@ html, body {
   color: var(--accent);
   border-bottom-color: var(--accent);
 }
+.footer-version {
+  color: var(--text-sub);
+  font-family: var(--mono);
+  font-size: 12px;
+  letter-spacing: 0.02em;
+  user-select: text;
+}
 
 .wrap { max-width: 1180px; margin: 0 auto; padding: 20px 24px; }
 
