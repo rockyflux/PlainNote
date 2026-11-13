@@ -143,6 +143,15 @@ export type Messages = {
   apiResponseLabel: string;
   /** 创建成功返回示例；可用 {{origin}} */
   apiCreateResponse: string;
+  apiMcpTitle: string;
+  apiMcpLead: string;
+  apiMcpUrlLabel: string;
+  apiMcpConfigLabel: string;
+  /** Cursor / 客户端 MCP 配置示例；可用 {{origin}} */
+  apiMcpConfig: string;
+  apiMcpPromptLabel: string;
+  /** 配套提示词；可用 {{origin}} */
+  apiMcpPrompt: string;
 };
 
 const ZH: Messages = {
@@ -365,6 +374,26 @@ const ZH: Messages = {
   "noteUrl": "{{origin}}/note/a1b2c3d4e5",
   "rawUrl": "{{origin}}/raw/a1b2c3d4e5"
 }`,
+  apiMcpTitle: 'MCP',
+  apiMcpLead:
+    'Streamable HTTP 入口，无鉴权。当前仅提供 create_note：创建匿名笔记并返回编辑 / 网页 / Raw 三条链接。',
+  apiMcpUrlLabel: 'MCP 地址',
+  apiMcpConfigLabel: 'Cursor 配置示例',
+  apiMcpConfig: `{
+  "mcpServers": {
+    "plainnote": {
+      "url": "{{origin}}/mcp"
+    }
+  }
+}`,
+  apiMcpPromptLabel: '配套提示词',
+  apiMcpPrompt: `你可以使用 PlainNote MCP 创建匿名笔记。
+- MCP 地址：{{origin}}/mcp
+- 工具：create_note
+- 参数：content（必填正文）、title（可选）、format（可选，text 或 markdown，默认 text）
+- 成功后返回 id、secret、editUrl、noteUrl、rawUrl
+- 请妥善保存 editUrl / secret（私有编辑凭证）；对外只分享 noteUrl 或 rawUrl
+需要持久化文本、配置、Prompt，或生成给程序用的纯文本链接时，优先调用 create_note。`,
 };
 
 const EN: Messages = {
@@ -588,6 +617,26 @@ const EN: Messages = {
   "noteUrl": "{{origin}}/note/a1b2c3d4e5",
   "rawUrl": "{{origin}}/raw/a1b2c3d4e5"
 }`,
+  apiMcpTitle: 'MCP',
+  apiMcpLead:
+    'Streamable HTTP endpoint, no auth. Currently exposes create_note only: create an anonymous note and get edit / web / Raw links back.',
+  apiMcpUrlLabel: 'MCP URL',
+  apiMcpConfigLabel: 'Cursor config example',
+  apiMcpConfig: `{
+  "mcpServers": {
+    "plainnote": {
+      "url": "{{origin}}/mcp"
+    }
+  }
+}`,
+  apiMcpPromptLabel: 'Companion prompt',
+  apiMcpPrompt: `You can create anonymous notes with the PlainNote MCP.
+- MCP URL: {{origin}}/mcp
+- Tool: create_note
+- Args: content (required), title (optional), format (optional: text or markdown; default text)
+- On success you get id, secret, editUrl, noteUrl, rawUrl
+- Keep editUrl / secret private; share only noteUrl or rawUrl
+When you need to persist text, config, a prompt, or a plaintext URL for programs, prefer create_note.`,
 };
 
 const MESSAGES: Record<Lang, Messages> = { zh: ZH, en: EN };

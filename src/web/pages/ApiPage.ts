@@ -114,6 +114,26 @@ export function mountApi(root: HTMLElement, langHint?: Lang): void {
         </table>
       </section>
 
+      <section class="api-card">
+        <h2>${escapeHtml(m.apiMcpTitle)}</h2>
+        <p class="api-desc">${escapeHtml(m.apiMcpLead)}</p>
+        <p class="api-sublabel">${escapeHtml(m.apiMcpUrlLabel)}</p>
+        <div class="api-code-wrap">
+          <pre class="api-code"><code>${escapeHtml(`${origin}/mcp`)}</code></pre>
+          <button type="button" class="api-copy" data-copy>${escapeHtml(m.copy)}</button>
+        </div>
+        <p class="api-sublabel">${escapeHtml(m.apiMcpConfigLabel)}</p>
+        <div class="api-code-wrap">
+          <pre class="api-code"><code>${escapeHtml(m.apiMcpConfig.replaceAll('{{origin}}', origin))}</code></pre>
+          <button type="button" class="api-copy" data-copy>${escapeHtml(m.copy)}</button>
+        </div>
+        <p class="api-sublabel">${escapeHtml(m.apiMcpPromptLabel)}</p>
+        <div class="api-code-wrap">
+          <pre class="api-code"><code>${escapeHtml(m.apiMcpPrompt.replaceAll('{{origin}}', origin))}</code></pre>
+          <button type="button" class="api-copy" data-copy>${escapeHtml(m.copy)}</button>
+        </div>
+      </section>
+
       <h2 class="api-section-title">${escapeHtml(m.apiSectionTitle)}</h2>
 
       ${endpoint('POST', '/api/notes', m.apiPostCreate, createCurl, m.copy, {
