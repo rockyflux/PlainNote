@@ -963,6 +963,13 @@ button:disabled { opacity: 0.55; cursor: not-allowed; }
   font-weight: 600;
 }
 .api-desc { margin: 0 0 10px; color: var(--text-sub); font-size: 14px; }
+.api-sublabel {
+  margin: 14px 0 8px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text);
+}
+.api-card > .api-desc + .api-sublabel { margin-top: 4px; }
 .api-note { margin: 0 0 10px; font-size: 13px; color: #92400e; }
 .api-code-wrap { position: relative; }
 .api-code {
